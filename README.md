@@ -1,30 +1,30 @@
 # dotfiles
 
-Configuration files managed with [mise](https://mise.jdx.dev/).
+[mise](https://mise.jdx.dev/)で管理する設定ファイルです。
 
-Managed areas:
+管理対象：
 
-- Claude Code settings, commands, and themes
-- Herdr preferences and Skill
+- Claude Codeの設定・コマンド・テーマ
+- Herdrの設定とSkill
 - Zsh
 - Ghostty
 - Neovim
 
-## Setup with mise
+## miseでセットアップ
 
-Install [mise](https://mise.jdx.dev/getting-started.html), then preview the setup directly from GitHub:
+[mise](https://mise.jdx.dev/getting-started.html)をインストールし、GitHubからセットアップ内容を確認します。
 
 ```sh
 mise bootstrap --from https://github.com/YuSa0-6/dotfiles.git --dry-run
 ```
 
-Retrieve and apply it after reviewing the preview:
+確認後、設定を取得して適用します。
 
 ```sh
 mise bootstrap --from https://github.com/YuSa0-6/dotfiles.git
 ```
 
-From an existing checkout, inspect or apply changes with:
+取得済みのリポジトリでは、次のコマンドで確認・適用できます。
 
 ```sh
 mise bootstrap --dry-run
@@ -32,16 +32,13 @@ mise bootstrap
 mise bootstrap status
 ```
 
-Authentication, sessions, history, caches, local permissions, and generated
-files are intentionally excluded.
+認証情報、セッション、履歴、キャッシュ、ローカル権限、生成ファイルは意図的に管理対象から除外しています。
 
 ## Herdr Skill
 
-`herdr/skill/SKILL.md` is shared through these mise-managed paths:
+`herdr/skill/SKILL.md`を、miseで次のパスへ配置します。
 
-- Pi: `~/.agents/skills/herdr/SKILL.md` (auto-discovered; no second copy under `~/.pi/agent/skills`)
-- Claude Code: `~/.claude/skills/herdr/SKILL.md`
+- Pi：`~/.agents/skills/herdr/SKILL.md`（自動検出されるため、`~/.pi/agent/skills`には重複して配置しません）
+- Claude Code：`~/.claude/skills/herdr/SKILL.md`
 
-Use `/skill:herdr` in Pi or `/herdr` in Claude Code. Herdr control requires
-running inside Herdr (`HERDR_ENV=1`). This installs the Skill only, not the
-Herdr binary or agent-state hooks.
+Piでは`/skill:herdr`、Claude Codeでは`/herdr`で利用できます。Herdrを操作するには、Herdr内で実行している必要があります（`HERDR_ENV=1`）。この設定で導入するのはSkillのみで、Herdr本体やagent-state hookは含みません。
