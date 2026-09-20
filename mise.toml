@@ -6,6 +6,7 @@
 "~/.config/nvim" = { source = "nvim", mode = "symlink" }
 "~/.pi/agent/settings.json" = { source = "pi/agent/settings.json", mode = "symlink" }
 "~/.config/herdr/config.toml" = { source = "herdr/config.toml", mode = "symlink" }
+"~/.config/herdr/plugins/config/jhochenbaum.hunkdiff/config.toml" = { source = "herdr/hunkdiff.toml", mode = "symlink" }
 "~/.agents/skills/herdr/SKILL.md" = { source = "herdr/skill/SKILL.md", mode = "symlink" }
 "~/.claude/skills/herdr/SKILL.md" = { source = "herdr/skill/SKILL.md", mode = "symlink" }
 "~/.claude/settings.json" = { source = "claude/settings.json", mode = "symlink" }
