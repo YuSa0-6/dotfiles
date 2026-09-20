@@ -1,0 +1,8 @@
+.DS_Store
+node_modules/
+.pi/
+.env
+.env.*
+nvim/.pi/
+nvim/Untitled
+claude/settings.local.json
