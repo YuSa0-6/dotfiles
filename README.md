@@ -1,16 +1,30 @@
 # dotfiles
 
-Personal configuration managed with [mise](https://mise.jdx.dev/).
+Configuration files managed with [mise](https://mise.jdx.dev/).
 
 Managed areas:
 
-- Claude Code settings and personal resources
+- Claude Code settings, commands, and themes
 - Herdr preferences and Skill
 - Zsh
 - Ghostty
 - Neovim
 
-Preview or apply the configuration from this repository:
+## Setup with mise
+
+Install [mise](https://mise.jdx.dev/getting-started.html), then preview the setup directly from GitHub:
+
+```sh
+mise bootstrap --from https://github.com/YuSa0-6/dotfiles.git --dry-run
+```
+
+Retrieve and apply it after reviewing the preview:
+
+```sh
+mise bootstrap --from https://github.com/YuSa0-6/dotfiles.git
+```
+
+From an existing checkout, inspect or apply changes with:
 
 ```sh
 mise bootstrap --dry-run
