@@ -10,9 +10,13 @@ modelRoles:
   commit: openai-codex/gpt-6-luna
   tiny: openai-codex/gpt-6-luna
 defaultThinkingLevel: low
+disabledProviders:
+  - openrouter
 advisor:
   enabled: true
 task:
+  isolation:
+    enabled: true
   agentModelOverrides:
     task: "@task"
     reviewer: "@slow"
@@ -21,6 +25,7 @@ task:
     scout: "@smol"
     sonic: "@smol"
     designer: "@designer"
+  showResolvedModelBadge: true
 retry:
   fallbackChains:
     default:
@@ -41,3 +46,7 @@ theme:
   light: titanium
 setupVersion: 2
 colorBlindMode: true
+images:
+  blockImages: true
+tui:
+  imeSafeCursor: true
