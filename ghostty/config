@@ -53,7 +53,7 @@ font-family = JetBrains Mono
 font-family = BIZ UDGothic
 font-feature = -dlig # ref-site: https://zenn.dev/lonsagisawa/articles/ghostty-japanese-settings
 # == theme ==
-theme = Ayu Mirage,light:Ayu Light
+theme = light:Ayu Light,dark:Ayu Mirage
 # == windwow ==
 background-opacity = 0.80
 background-blur = 10
