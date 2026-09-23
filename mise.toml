@@ -4,8 +4,11 @@
 "~/.zshenv" = { source = "zsh/.zshenv", mode = "symlink" }
 "~/Library/Application Support/com.mitchellh.ghostty/config" = { source = "ghostty/config", mode = "symlink" }
 "~/.config/nvim" = { source = "nvim", mode = "symlink" }
+"~/.config/druk/config.json" = { source = "druk/config.json", mode = "symlink" }
 "~/.pi/agent/settings.json" = { source = "pi/agent/settings.json", mode = "symlink" }
 "~/.omp/agent/config.yml" = { source = "omp/agent/config.yml", mode = "symlink" }
+"~/.omp/agent/AGENTS.md" = { source = "omp/agent/AGENTS.md", mode = "symlink" }
+"~/.omp/agent/RULES.md" = { source = "omp/agent/RULES.md", mode = "symlink" }
 "~/.config/herdr/config.toml" = { source = "herdr/config.toml", mode = "symlink" }
 "~/.config/herdr/plugins/config/jhochenbaum.hunkdiff/config.toml" = { source = "herdr/hunkdiff.toml", mode = "symlink" }
 "~/.agents/skills/herdr/SKILL.md" = { source = "herdr/skill/SKILL.md", mode = "symlink" }
