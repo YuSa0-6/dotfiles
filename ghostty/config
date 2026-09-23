@@ -56,7 +56,7 @@ font-feature = -dlig # ref-site: https://zenn.dev/lonsagisawa/articles/ghostty-j
 theme = light:Ayu Light,dark:Ayu Mirage
 # == windwow ==
 background-opacity = 0.80
-background-blur = 10
+background-blur = 20
 maximize = true
 window-inherit-working-directory
 window-save-state = always
