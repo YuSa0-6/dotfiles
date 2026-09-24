@@ -135,6 +135,9 @@ export PATH="$HOME/.hunk/bin:$PATH"
 # druk
 export PATH="$HOME/.druk/bin:$PATH"
 
+# bun global bin（omp）
+export PATH="$HOME/.bun/bin:$PATH"
+
 # gwq
 command -v gwq >/dev/null 2>&1 && source <(gwq completion zsh)
 
