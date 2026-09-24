@@ -36,6 +36,8 @@ mise bootstrap status
 
 認証情報、セッション、履歴、キャッシュ、ローカル権限、生成ファイルは意図的に管理対象から除外しています。
 
+マシン固有・社内向けのシェル設定は、管理対象外の`~/.zshrc.local`と`~/.zprofile.local`に置きます（`.zshrc`・`.zprofile`の末尾で読み込みます）。
+
 ## Herdr Skill
 
 `herdr/skill/SKILL.md`を、miseで次のパスへ配置します。

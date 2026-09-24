@@ -69,6 +69,7 @@ keybind = "global:cmd+shift+t=toggle_quick_terminal"
 # ==clip-board==
 clipboard-write = allow
 clipboard-trim-trailing-spaces = true
+copy-on-select = clipboard
 # == macos ==
 macos-window-shadow = false
 macos-titlebar-proxy-icon = hidden

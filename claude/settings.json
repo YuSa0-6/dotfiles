@@ -22,7 +22,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"/Users/yusa/.claude/hooks/context-mode-cache-heal.mjs\""
+            "command": "\"$HOME/.claude/hooks/context-mode-cache-heal.mjs\""
           }
         ]
       },
@@ -31,7 +31,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash '/Users/yusa/.claude/hooks/herdr-agent-state.sh' session",
+            "command": "bash \"$HOME/.claude/hooks/herdr-agent-state.sh\" session",
             "timeout": 10
           }
         ]
@@ -177,7 +177,7 @@
   "enableWorkflows": true,
   "statusLine": {
     "type": "command",
-    "command": "bash /Users/yusa/.claude/statusline.sh",
+    "command": "bash \"$HOME/.claude/statusline.sh\"",
     "padding": 0
   },
   "enabledPlugins": {
@@ -185,7 +185,16 @@
     "rust-analyzer-lsp@claude-plugins-official": true,
     "cloudflare@cloudflare": true,
     "context-mode@context-mode": true,
-    "typescript-lsp@claude-plugins-official": true
+    "typescript-lsp@claude-plugins-official": true,
+    "pyright-lsp@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": false,
+    "frontend-design@claude-plugins-official": false,
+    "daisyui@daisyui": false,
+    "diagram-design@diagram-design": true,
+    "eli5@claude-community": false,
+    "github@claude-plugins-official": false,
+    "i-have-adhd@i-have-adhd": true
   },
   "extraKnownMarketplaces": {
     "cloudflare": {
@@ -198,6 +207,36 @@
       "source": {
         "source": "github",
         "repo": "mksglu/context-mode"
+      }
+    },
+    "daisyui": {
+      "source": {
+        "source": "github",
+        "repo": "saadeghi/daisyui"
+      }
+    },
+    "diagram-design": {
+      "source": {
+        "source": "github",
+        "repo": "cathrynlavery/diagram-design"
+      }
+    },
+    "claude-community": {
+      "source": {
+        "source": "github",
+        "repo": "anthropics/claude-plugins-community"
+      }
+    },
+    "i-have-adhd": {
+      "source": {
+        "source": "github",
+        "repo": "ayghri/i-have-adhd"
+      }
+    },
+    "ponytail": {
+      "source": {
+        "source": "github",
+        "repo": "DietrichGebert/ponytail"
       }
     }
   },
@@ -217,5 +256,47 @@
   "theme": "custom:catppuccin-latte",
   "verbose": true,
   "skipAutoPermissionPrompt": true,
-  "voiceEnabled": true
+  "voiceEnabled": true,
+  "agentPushNotifEnabled": true,
+  "askUserQuestionTimeout": "5m",
+  "autoContinueAtUsageLimit": true,
+  "editorMode": "normal",
+  "env": {
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet"
+  },
+  "model": "claude-fable-5-1[1m]",
+  "outputStyle": "Readable",
+  "remoteControlAtStartup": false,
+  "sandbox": {
+    "enabled": false
+  },
+  "skillOverrides": {
+    "base-ui": "off",
+    "codebase-design": "off",
+    "computer-use": "off",
+    "daisyui": "off",
+    "diagnosing-bugs": "off",
+    "herdr": "off",
+    "herdr-loop": "off",
+    "improve-codebase-architecture": "off",
+    "linear-tickets": "off",
+    "orca-emulator": "off",
+    "orca-emulator-android": "off",
+    "orca-linear": "off",
+    "orca-per-workspace-env": "off",
+    "resolving-merge-conflicts": "off",
+    "sentry-cli": "off",
+    "teach": "off",
+    "to-questionnaire": "off",
+    "triage": "off",
+    "wizard": "off",
+    "argument-gap-edit": "off",
+    "naming-parts-of-speech": "off",
+    "hono": "off"
+  },
+  "voice": {
+    "enabled": true,
+    "mode": "hold"
+  },
+  "worktree": {}
 }

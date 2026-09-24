@@ -9,9 +9,40 @@
     "npm:context-mode",
     "npm:pi-lens@4.1.6",
     "git:github.com/DietrichGebert/ponytail",
-    "npm:pi-mcp-adapter"
+    "npm:pi-mcp-adapter",
+    "npm:pi-goal-x",
+    "git:github.com/jonjonrankin/pi-caveman",
+    "npm:pi-web-access"
   ],
   "showCacheMissNotices": true,
   "collapseChangelog": true,
-  "tuiMode": "regular"
+  "tuiMode": "regular",
+  "codexFastMode": true,
+  "hideThinkingBlock": false,
+  "markdown": {
+    "mermaid": "streaming"
+  },
+  "defaultProjectTrust": "always",
+  "modelThinkingLevels": {
+    "openai-codex/gpt-5.6-luna": "max",
+    "anthropic/claude-fable-5": "medium",
+    "anthropic/claude-opus-4-8": "medium",
+    "anthropic/claude-haiku-4-5": "high",
+    "anthropic/claude-opus-5": "high",
+    "anthropic/claude-fable-5-1": "medium",
+    "openai-codex/gpt-5.6-terra": "max",
+    "openai-codex/gpt-5.6-sol": "max",
+    "anthropic/claude-sonnet-5": "medium",
+    "openai-codex/gpt-6-astra": "low"
+  },
+  "images": {
+    "blockImages": true
+  },
+  "compaction": {
+    "enabled": true
+  },
+  "terminal": {
+    "showTerminalProgress": true
+  },
+  "treeFilterMode": "all"
 }

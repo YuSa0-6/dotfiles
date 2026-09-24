@@ -7,9 +7,20 @@ status_indicators = "symbols"
 [ui.toast]
 delivery = "herdr"
 
+[ui.sound]
+enabled = true
+
 [theme]
 name = "catppuccin-latte"
 auto_switch = false
+
+[experimental]
+kitty_graphics = true
+pane_history = true
+switch_ascii_input_source_in_prefix = true
+
+[worktrees]
+directory = "~/workspace/worktrees"
 
 # BEGIN jhochenbaum.hunkdiff — managed by `setup-keys`; edit via the plugin, not by hand
 [[keys.command]]
@@ -36,3 +47,14 @@ type = "plugin_action"
 command = "jhochenbaum.hunkdiff.review:staged"
 description = "hunk: review staged changes"
 # END jhochenbaum.hunkdiff
+
+[[keys.command]]              # reviewr: toggle diff review sidebar
+key = "prefix+r"
+type = "plugin_action"
+command = "persiyanov.reviewr.toggle"
+
+[[keys.command]]              # hunk: close the review pane (managed blockの外なのでsetup-keys再実行でも残る)
+key = "prefix+shift+q"
+type = "plugin_action"
+command = "jhochenbaum.hunkdiff.close-review"
+description = "hunk: close the review pane"

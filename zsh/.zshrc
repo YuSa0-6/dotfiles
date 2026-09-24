@@ -71,6 +71,7 @@ ZSH_THEME="agnoster"
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
 plugins=(git bundler rails ruby brew z )
+[[ -d "${ZSH_CUSTOM:-$ZSH/custom}/plugins/zsh-autosuggestions" ]] && plugins+=(zsh-autosuggestions)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -81,12 +82,11 @@ source $ZSH/oh-my-zsh.sh
 # You may need to manually set your language environment
 # export LANG=en_US.UTF-8
 
+# Claude Code experimental features
+export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+
 # Preferred editor for local and remote sessions
-# if [[ -n $SSH_CONNECTION ]]; then
-#   export EDITOR='vim'
-# else
-#   export EDITOR='mvim'
-# fi
+export EDITOR='nvim'
 
 # Compilation flags
 # export ARCHFLAGS="-arch $(uname -m)"
@@ -108,6 +108,7 @@ export PATH="$HOME/.cargo/bin:$PATH"
 # ruby settings
 export PATH="$HOME/.rbenv/bin:$PATH"
 eval "$(rbenv init - zsh)"
+command -v direnv >/dev/null 2>&1 && eval "$(direnv hook zsh)"
 
 # Volta
 export VOLTA_HOME="$HOME/.volta"
@@ -133,3 +134,22 @@ export PATH="$HOME/.hunk/bin:$PATH"
 
 # druk
 export PATH="$HOME/.druk/bin:$PATH"
+
+# gwq
+command -v gwq >/dev/null 2>&1 && source <(gwq completion zsh)
+
+# sentry
+fpath=("$HOME/.local/share/zsh/site-functions" $fpath)
+
+# Pi
+export PI_CACHE_RETENTION=long
+
+# pnpm
+export PNPM_HOME="$HOME/Library/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME/bin:"*) ;;
+  *) export PATH="$PNPM_HOME/bin:$PATH" ;;
+esac
+
+# マシン固有・社内向けの設定（リポジトリ管理外）
+[[ -r ~/.zshrc.local ]] && source ~/.zshrc.local
