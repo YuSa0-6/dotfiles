@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
       "WebFetch(domain:github.com)"
@@ -194,7 +195,10 @@
     "diagram-design@diagram-design": true,
     "eli5@claude-community": false,
     "github@claude-plugins-official": false,
-    "i-have-adhd@i-have-adhd": true
+    "i-have-adhd@i-have-adhd": true,
+    "security-tools@cc-sre-plugins": false,
+    "medpeer-terraform@cc-sre-plugins": true,
+    "github@cc-sre-plugins": false
   },
   "extraKnownMarketplaces": {
     "cloudflare": {
@@ -238,6 +242,13 @@
         "source": "github",
         "repo": "DietrichGebert/ponytail"
       }
+    },
+    "cc-sre-plugins": {
+      "source": {
+        "source": "git",
+        "url": "git@github.com:medpeer-dev/cc-sre-plugins.git"
+      },
+      "autoUpdate": true
     }
   },
   "language": "日本語",
@@ -277,7 +288,6 @@
     "daisyui": "off",
     "diagnosing-bugs": "off",
     "herdr": "off",
-    "herdr-loop": "off",
     "improve-codebase-architecture": "off",
     "linear-tickets": "off",
     "orca-emulator": "off",
