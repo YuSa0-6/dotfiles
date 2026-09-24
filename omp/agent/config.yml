@@ -26,6 +26,8 @@ task:
     sonic: "@smol"
     designer: "@designer"
   showResolvedModelBadge: true
+  agentAdvisor:
+    task: "on"
 retry:
   fallbackChains:
     default:
