@@ -14,6 +14,7 @@
 "~/.agents/skills/herdr/SKILL.md" = { source = "herdr/skill/SKILL.md", mode = "symlink" }
 "~/.claude/skills/herdr/SKILL.md" = { source = "herdr/skill/SKILL.md", mode = "symlink" }
 "~/.claude/settings.json" = { source = "claude/settings.json", mode = "symlink" }
+"~/.claude/CLAUDE.md" = { source = "claude/CLAUDE.md", mode = "symlink" }
 "~/.claude/statusline.sh" = { source = "claude/statusline.sh", mode = "symlink" }
 "~/.claude/hooks/fallow-gate.sh" = { source = "claude/hooks/fallow-gate.sh", mode = "symlink" }
 "~/.claude/commands/agtm.md" = { source = "claude/commands/agtm.md", mode = "symlink" }
