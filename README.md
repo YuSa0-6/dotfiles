@@ -4,7 +4,7 @@
 
 管理対象：
 
-- Claude Codeの設定・コマンド・テーマ
+- Claude Codeの設定・コマンド・テーマ・hook（fallow gate。`fallow`本体は`mise use -g npm:fallow`で別途導入）
 - ompの設定（piの設定は移行確認まで保持）
 - Herdrの設定とSkill
 - Zsh

@@ -119,7 +119,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$HOME/.claude/hooks/fallow-precommit.sh\"",
+            "command": "\"$HOME\"/.claude/hooks/fallow-gate.sh",
             "timeout": 180,
             "statusMessage": "fallow audit を実行中..."
           }

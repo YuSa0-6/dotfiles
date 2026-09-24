@@ -15,6 +15,7 @@
 "~/.claude/skills/herdr/SKILL.md" = { source = "herdr/skill/SKILL.md", mode = "symlink" }
 "~/.claude/settings.json" = { source = "claude/settings.json", mode = "symlink" }
 "~/.claude/statusline.sh" = { source = "claude/statusline.sh", mode = "symlink" }
+"~/.claude/hooks/fallow-gate.sh" = { source = "claude/hooks/fallow-gate.sh", mode = "symlink" }
 "~/.claude/commands/agtm.md" = { source = "claude/commands/agtm.md", mode = "symlink" }
 "~/.claude/themes/cappuccino-light.json" = { source = "claude/themes/cappuccino-light.json", mode = "symlink" }
 "~/.claude/themes/catppuccin-latte.json" = { source = "claude/themes/catppuccin-latte.json", mode = "symlink" }
