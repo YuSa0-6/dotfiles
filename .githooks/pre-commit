@@ -1,0 +1,7 @@
+#!/bin/sh
+# stage した変更に秘密情報が含まれていたら commit を止める。
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks がありません。'mise install' を実行してください。" >&2
+  exit 1
+fi
+exec gitleaks git --pre-commit --staged --redact --no-banner
