@@ -51,4 +51,6 @@ omp / Piでは`/skill:herdr`、Claude Codeでは`/herdr`で利用できます。
 
 `omp/agent/config.yml`でモデルを役割別に割り当て、`task.agentModelOverrides`で各サブエージェントを役割に固定しています。メイン・Plan・designerはClaude Opus 5.5、AdvisorはClaude Fable 5.1、サブエージェントはCodex（`task`/`librarian`はGPT-6 Sol、`reviewer`/`security-reviewer`は`slow`役のGPT-6 Astra、`scout`/`sonic`は`smol`役のGPT-6 Luna）です。選定はOpenRouter MCPの`list-benchmarks`（Artificial Analysis / Design Arena）に基づきます。`openai/`・`openrouter/`は従量課金のため、役割・フォールバックには使いません。Skillは既存の`~/.agents/skills`を共用します。piの`pi-dynamic-workflows`・`context-mode`・`pi-lens`・`ponytail`はpi用パッケージのため、ompへは移していません（ompには組み込みのサブエージェント・LSPがあります）。
 
+`omp/agent/APPEND_SYSTEM.md`はClaude Codeのoutput style「Readable」（`~/.claude/output-styles/readable.md`）と同じ文体指示です。ompはoutput styleを読まないため、既定のシステムプロンプトを残したまま末尾に追記する`APPEND_SYSTEM.md`へ置いています。
+
 `mise bootstrap`後、`omp`の`/login`でAnthropicとOpenAI Codexに認証し、`omp config get modelRoles`と`/agents`で確認してください。ompの`/model`・`/settings`で設定を保存するとsymlinkが通常ファイルに置き換わることがあるため、その場合は差分をこのファイルへ戻して`mise bootstrap`し直してください。piの認証情報・セッションは移行しません。

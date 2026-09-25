@@ -8,6 +8,7 @@
 "~/.pi/agent/settings.json" = { source = "pi/agent/settings.json", mode = "symlink" }
 "~/.omp/agent/config.yml" = { source = "omp/agent/config.yml", mode = "symlink" }
 "~/.omp/agent/AGENTS.md" = { source = "omp/agent/AGENTS.md", mode = "symlink" }
+"~/.omp/agent/APPEND_SYSTEM.md" = { source = "omp/agent/APPEND_SYSTEM.md", mode = "symlink" }
 "~/.omp/agent/RULES.md" = { source = "omp/agent/RULES.md", mode = "symlink" }
 "~/.omp/agent/WATCHDOG.md" = { source = "omp/agent/WATCHDOG.md", mode = "symlink" }
 "~/.config/herdr/config.toml" = { source = "herdr/config.toml", mode = "symlink" }
