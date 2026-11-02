@@ -7,3 +7,4 @@ export PATH="$HOME/.grok/bin:$PATH"
 
 # mise
 eval "$(~/.local/bin/mise activate bash)"
+export PATH="$HOME/.bun/bin:$PATH"
