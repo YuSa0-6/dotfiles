@@ -11,6 +11,8 @@
 - Ghostty
 - Neovim
 - druk（`config.json`のみ。拡張・セッションは除外）
+- Bash（`.bashrc`。Linux VM用）
+- Grok Buildの設定（`config.toml`のみ。`auth.json`などの認証情報は除外）
 
 ## miseでセットアップ
 
