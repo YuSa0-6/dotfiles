@@ -1,0 +1,60 @@
+{
+  "id": "root",
+  "type": "column",
+  "titlebar": "none",
+  "traffic_lights": [
+    16,
+    18
+  ],
+  "theme": "graphite",
+  "colors": {
+    "background": "#0E0F11",
+    "border": "#2A2C31",
+    "foreground": "#E4E5E9",
+    "muted": "#B4B7BF",
+    "dim": "#9A9DA6"
+  },
+  "background": "#0E0F11",
+  "children": [
+    {
+      "id": "solar-top",
+      "type": "row",
+      "children": [
+        {
+          "id": "solar",
+          "type": "block",
+          "content": {
+            "mod": "solar"
+          }
+        },
+        {
+          "id": "solar-detail",
+          "type": "block",
+          "size": {
+            "px": 330
+          },
+          "content": {
+            "mod": "solar",
+            "props": {
+              "role": "detail"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "solar-bar",
+      "type": "block",
+      "size": {
+        "px": 34
+      },
+      "content": {
+        "mod": "solar",
+        "props": {
+          "role": "bar"
+        }
+      },
+      "window_drag": true
+    }
+  ]
+}
