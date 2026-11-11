@@ -2,11 +2,15 @@
   "entry": [
     // Herdr が実行時に読み込む mod の入口。どこからも import されないので、入口として教える。
     "herdr-app/mods/solar/main.ts",
-    // package.json がなく、テストの枠組みを自動で見つけられないので、bun のテストも入口として教える。
-    "**/*.test.ts"
+    // omp が実行時に読み込む hook の入口。
+    "omp/agent/hooks/pre/pr-gate.ts",
+    // 手で実行するスクリプト。
+    "pi/pstack/generate.mjs"
   ],
   // main.ts をコンパイルした生成物。元と同じ内容なので、解析の対象から外す。
   "ignorePatterns": ["herdr-app/mods/solar/main.js"],
   // Herdr がアプリ内で提供するモジュール。npm のパッケージとしては存在しない。
-  "ignoreUnresolvedImports": ["herdr", "gpui-kit", "gpui-base"]
+  "ignoreUnresolvedImports": ["herdr", "gpui-kit", "gpui-base"],
+  // 実行する側（Herdr、omp）が提供するモジュール。package.json には書かない。
+  "ignoreDependencies": ["herdr", "gpui-kit", "gpui-base", "@oh-my-pi/pi-coding-agent"]
 }
