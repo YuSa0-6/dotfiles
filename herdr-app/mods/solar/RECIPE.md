@@ -114,6 +114,7 @@ Providerは `agents()` の `app` で決める：`claude-code`→Claude、`codex`
 - 進む角度は、4秒ごとに `360 × 4 ÷ (120 × (r ÷ 0.125)^1.5)` 度（`0.125` はいちばん内側の半径）。いちばん内側で1周 約2分、外側ほど遅い。
 - 動くのは `working` の惑星だけ。ほかは、その場で止まる。
 - 輪・印・衛星・名前も惑星と一緒に移す。`transition` は要素を `id` で見分けるので、動かす要素すべてに安定した `id` を付ける。
+- 輪と印は、どの状態のぶんも（working の輪と弧、blocked の輪、done の輪、4種の印）いつも惑星と一緒に動かしておき、いまの状態のものだけ不透明にする。状態が変わってから作ると、その要素だけ `transition` なしで行き先に出て、移動中（最大4秒）の惑星とずれるため。見せていない弧は回さない。
 - 進んだ角度は保存しない。Herdrを起動し直すと、最初の角度に戻る。
 - 月は4秒ごとに24度ずつ、枠3の位置を中心に回る（半径 `0.085 × S`）。
 - 設定で「動き：オフ」のとき、公転と月は止める。working の輪の弧も回さず、止まった弧をその場に残す。
@@ -139,6 +140,7 @@ Providerは `agents()` の `app` で決める：`claude-code`→Claude、`codex`
 | 押すもの | 起きること |
 |---|---|
 | 惑星 | 詳細の列に、そのProjectを出す。絵（`image`）に付けた `on_click` は反応しないので、惑星と同じ大きさの透明な丸い箱を上に重ね、そこで受ける |
+| 惑星を2回続けて（ダブルクリック） | 詳細の列にそのProjectを出したうえで、いちばん急ぎのAgentのターミナルを開く（`terminal.peek`）。列の「ターミナルを開く」を経ない近道。`on_click` の `click_count` がちょうど2のときだけ開く（3回目以降で開き直さない）。Agentがいなければ、列に出すだけ |
 | 太陽 | 詳細の列に、依頼を書く欄を出す |
 | 月 | 詳細の列に、設定を出す |
 | 「ホームに戻る」 | 詳細の列をホームに戻す |
@@ -163,14 +165,27 @@ Providerは `agents()` の `app` で決める：`claude-code`→Claude、`codex`
 
 blocked のProjectを出しているあいだ、列の枠線を黄色 2px にする。
 
-### 詳細の列：太陽（依頼）
+### ターミナルを開いたとき
 
-- ラベル「太陽（Claude Code）」、見出し「何を頼みますか」、複数行の入力欄、説明「Claude Code（Fable）が受け取ります。ローカルにフォルダを作り、空いている軌道に出します」、ボタン「渡す」「やめる」。
-- 「渡す」で、太陽のAgentに `hc(["send", 太陽のaddress, 入力した文])`。入力欄を空にして列をホームに戻し、「太陽に渡しました」と通知する。失敗したら、その旨を通知する。文が空のあいだ「渡す」は押せない。
-- 上限の内側に空いている枠がないときは入力欄を出さず、「軌道がいっぱいです」「Projectを1つ閉じるか、並列の数を増やすと頼めます」。
+- 「ターミナルを開く」は、Herdr 既定の `terminal.peek` を使わず、Solar が自分で重ねて開く（`openOverlay` の `dialog`、幅・高さとも画面の 86%）。上に高さ34pxの帯、下にターミナル。
+- 帯（`props: { role: "head", terminal }`）には、そのターミナルのフォルダ名（太字）と、ホームからの場所（薄い字）、右端に閉じる「✕」を出す。どのProjectのターミナルかを、開いた瞬間に分かるようにするため。
+- フォルダは、動いているプログラムのもの（`terminals()` の `foreground.cwd`）を優先し、なければシェルのもの（`cwd`）。
+- 既定の peek の帯（`mods/peek`）を直す方法は取らない。Herdr 同梱のファイルは、直しても次の起動で元に戻されるため。
+
+### 太陽に頼む（太陽を押したとき）
+
+- 太陽を押すと、太陽のターミナルを重ねて開く（「ターミナルを開いたとき」と同じ帯つき）。そこで頼みたいことを書く。入力欄は作らない。ターミナルなら、音声入力や `@ファイル`、`/skill` がそのまま使えるため。
+- 開く前に、手が空いている太陽（idle・done）には `/clear` を入力する。前の依頼のやり取りを消し、読むものを減らす。太陽の役目は起動時の `SUN.md` にあるので消えない。作業中・質問中の太陽には入力せず、そのまま開く。
+- `/clear` は `hc(["keys", 太陽のaddress, "/", "c", "l", "e", "a", "r", "enter"])` でキーを1つずつ押して入力する。`hc send` は送り主の印（`<hc from=…>`）で文を包むので、コマンドとして働かない。
+- 軌道がいっぱいかどうかは、太陽が `orbit.sh` で自分で確かめて返す。
+- 太陽がいないとき・止まっているときは、右の列に太陽の画面（下）を出す。
+
+### 詳細の列：太陽
+
+- 太陽がいるとき：「太陽に頼む」と「ターミナルを開く」ボタン（押したときの動きは上と同じ）。
 - `sun` のスペースがないとき：「太陽がまだいません」と「太陽を起こす」ボタン。押すと太陽を起動する（下の「太陽について」）。
 - `sun` のスペースはあるがAgentがいないとき：「太陽が止まっています」「sun のスペースで claude を起動し直してください」。
-- 太陽が blocked のとき：入力欄の代わりに「太陽が質問しています」と「ターミナルを開く」（`terminal.peek`）。
+- 太陽が blocked のとき：「太陽が質問しています」と「ターミナルを開く」。
 - 太陽自身の状態も見せる：Agentがいなければ太陽を不透明度 0.6 にする。working なら太陽のまわりで弧が回る。blocked なら白っぽい太い輪（`#F4F1E6`、4px）と「！」の印。
 - 太陽は絵なので、押す範囲は透明な丸い箱を上に重ねて受ける。
 
@@ -193,6 +208,50 @@ Herdrは、人が見た時点で done を idle に変える。だから「確認
 
 「見た」になるのは、Herdrのウィンドウで人がそのAgentを開いたとき。コマンド（`agent.focus` や `terminal.peek`）を外から呼んだだけでは変わらなかった。
 
+## 端の灯り（いつものレイアウトに置く帯）
+
+ねらい：ターミナルで作業している間も、誰かが待っていることに気づけるようにする。約束は「あなたを待っているものは、必ず見える」。
+
+- いつものレイアウト（`layouts/herdr-t3.json`）のサイドバーの下、Settings の上に、高さ28pxのブロックを1つ足す。`content: { mod: "solar", props: { role: "lamp" } }`。サイドバーの中に置くので、ターミナルの広さは変わらない。
+- 出すのは「待ってる n」「進めた n」の2つだけ。0 のときも場所は変えず、暗くする（不透明度 0.45、テーマの `dim` の色）。1以上になると、テーマの `blocked`／`done` の色で明るくなる。
+- 色は Solar の固定の色ではなく `theme()` から取る。いつものレイアウトは明るい配色のこともあるため。
+- 帯を押すと `run("layout.switch", { name: "solar" })` で Solar に切り替える。
+- 灯りのコピーも、1秒ごとに枠の保存（`persist`）を行う。Solar を開いていない間に閉じたProjectも、枠が空き、記録が残る。太陽の自動起動は行わない。
+- 直す前の `herdr-t3.json` は `~/.config/herdr-app/backup/herdr-t3.before-lamp.json` に控えてある。戻すときは、これを `layouts/herdr-t3.json` に上書きする。
+- 見た目の確認には `props: { role: "lamp", demo: true }` を渡す（見本の8惑星の数が出る）。
+
+## 軌道の外
+
+- 枠をもらえないスペース（9個目以降）があるとき、状態の帯の「作業中」の右に、黄色で「軌道の外 n」と出す。端の灯りにも同じものを出す。
+- 0 のときは何も出さない。
+- 数は「`sun` 以外のスペースの数 − 軌道に出ている数」。
+
+## 閉じたProjectの記録
+
+ねらい：あとで「あの件どうなった」を、頭で覚えずにたどれるようにする。
+
+- 置き場所：`~/.config/herdr-app/data/solar/closed.tsv`。その場の状態なので、`shared.json` と同じく dotfiles には写さない。
+- 書式：1件1行、タブ区切りで「日付と時刻（`YYYY-MM-DD HH:MM`）」「名前」「フォルダ」。末尾に足していく。
+
+  ```
+  2026-11-10 19:32	tmp-closed	/Users/you/workspace/solar/tmp-closed
+  ```
+
+- 書くのは、枠が空いたとき（「閉じたProject」の数を増やすのと同じ瞬間）。Solar の「このProjectを閉じる」でも、Herdr 本体で閉じても書かれる。
+- 閉じたあとでは名前とフォルダを読めないので、見えているうちに共有の値 `solar.known`（スペースの id → 名前とフォルダ）に控えておく。
+- 画面に一覧は出さない。読むときは `cat ~/.config/herdr-app/data/solar/closed.tsv`。
+- `sun` は惑星ではないので、記録しない。
+
+## Agent向けの決まり
+
+方針：惑星（Project）からの派生は許容する。歯止めは8本の軌道。
+
+- 名前の付け方：英小文字と数字とハイフン、12文字まで。`sun` は使わない。
+- 新しいProjectを作る前に、空いている軌道があるか確かめる。`~/.config/herdr-app/mods/solar/orbit.sh` を実行すると「空き 7（上限 8、使用中 1）」のように出る。空きがなければ終了コード 1。空きがなければ作らず、報告の中で提案する。
+- 太陽は、Projectを作る以外のことをしない。
+- 派生したProjectがどこから生まれたかの示し方は、未決（Herdr は親を記録しない。名前の頭に親の名前を付ける案と、ターミナルのラベルに書く案がある）。決まったら、ここと `PLANET.md` に書く。
+- 太陽への決まりは `SUN.md`、惑星への決まり（派生の手順を含む）は `PLANET.md` に書いてある。
+
 ## 太陽について
 
 太陽は、依頼を受けて新しいProjectを作る役のAgentで、**Claude Code（モデルはFable）**。自分では作業しない。
@@ -202,14 +261,24 @@ Herdrは、人が見た時点で done を idle に変える。だから「確認
 - 太陽がProjectを作る手順（太陽のAgentへの指示文に書く内容）：
   1. 依頼からProject名を決める。
   2. ローカルにフォルダを作る。
-  3. `herdr-app do space.new --name <名前> --folder <フォルダ> --argv '["claude"]' --task "<最初の一言>"` を実行する。
+  3. `herdr-app do space.new --name <名前> --folder <フォルダ> --argv <惑星のAgent> --task "<最初の一言>"` を実行する。惑星のAgentには `PLANET.md` を読ませ、最初の一言は `/pstack:poteto-mode <依頼の文>` にする（正確な形は `SUN.md`）。
   4. それ以上は何もしない。
+- 最初は太陽だけがいて、そこから惑星を作る。そのため、Solar を開いたときに `sun` のスペースがなければ、自動で太陽を起こす。
+  - 太陽がいない状態が3秒続いたら起こす（起動直後はスペースがまだ読めていないことがあるため）。スペースを読み込んでいる間は数えない。
+  - 起こすのは、開いてから1回だけ。太陽系のブロックだけが行う。途中で太陽を閉じたときは戻さない（次に Solar を開いたとき、または「太陽を起こす」で戻る）。
+  - 見本（`demo`）では起こさない。
+- 惑星1つは、フォルダを持つProject 1つ（＝スペース1つ）。Agent 1体ではない。太陽を通さずに作ったスペースも惑星として並ぶ。
 - 太陽の起動（「太陽を起こす」が行うこと）：`~/workspace/solar` を作り、そこを `folder` にして `space.new` を呼ぶ。`argv` は次のとおり。
 
   ```
-  claude --model fable --append-system-prompt-file ~/.config/herdr-app/mods/solar/SUN.md --allowedTools "Bash(mkdir *)" "Bash(herdr-app do space.new *)"
+  claude --model fable --append-system-prompt-file ~/.config/herdr-app/mods/solar/SUN.md --allowedTools "Bash(mkdir *)" "Bash(herdr-app do space.new *)" "Bash(*/herdr-app/mods/solar/orbit.sh)"
   ```
 
+- 太陽は親のAgentだが、役目は「Projectを1つ作って渡す」まで。依頼を分けたり、惑星を見守ったりはしない（太陽自体が「待っている相手」になり、見るものが増えるため）。
+- 惑星のAgentへの指示文は `mods/solar/PLANET.md` に置く。人は惑星の見た目（回る・黄色の輪・緑の輪）しか見ていない、という前提で、やり切ること・質問を絞ること・終わりの報告の形・触る範囲を決めている。Claude Code には `--append-system-prompt-file`、Pi には `--append-system-prompt` で読ませる。
+- 惑星のAgentは pstack（poteto 氏の技能集）の `/pstack:poteto-mode` で動かす。確かめるところまで自分で進むので、人が見守る量が減る。この技能はAgentが自分からは呼べない設定なので、最初の一言の先頭に付けて渡す。Pi では `/skill:poteto-mode <依頼の文>` にする。
+- Pi 用の pstack は、dotfiles の `pi/pstack/generate.mjs` が `~/.pi/agent/pstack` に作る写し。公式が Claude Code 向けに行っているのと同じ方式で、スキルの本文は変えず、冒頭の「対応表を先に読め」の1文と対応表（`pi/pstack/pi.md`）だけを Pi 向けに差し替える。Pi の設定（`pi/agent/settings.json` の `skills`）に登録してあり、どの Pi でも既定で使える。手元のスキルと同名のもの（`tdd`、`teach`）は `pstack-` を付けて、手元を優先する。pstack を更新したら `node pi/pstack/generate.mjs` を実行し直す。
+- `SUN.md` を直したら、太陽を起動し直す。指示文は起動時に読み込まれるため。
 - 太陽への指示文は `mods/solar/SUN.md` に置く。`CLAUDE.md` にはしない（`~/workspace/solar` に置くと、その下に作る各Projectにも読み込まれてしまうため）。
 - 新しいProjectのフォルダは `~/workspace/solar/<名前>` に作られる。
 
@@ -217,6 +286,7 @@ Herdrは、人が見た時点で done を idle に変える。だから「確認
 
 - 初めて起こすとき、Claude Code が `~/workspace/solar` を信頼するか聞いてくる。一度 Yes と答えれば、その下に作る各Projectでは聞かれない。
 - シェルの起動時に確認が出る設定（oh-my-zsh の更新確認など）だと、そこで止まり、太陽が起動しない。ターミナルを開いて答える。
+- 最初の一言を `/pstack:poteto-mode …` にすると、スラッシュコマンドとして働く。`PLANET.md` の報告の形（結論・確かめる方法・決めたこと・残り）も守られる。
 - 太陽が `space.new` で作ったスペースに、最初の一言（`--task`）は届く。新しい惑星は空いている枠に出る。
 
 ## 作るもの
@@ -229,15 +299,17 @@ Herdrは、人が見た時点で done を idle に変える。だから「確認
 - 詳細の列のブロックに `props: { view: "<スペースのid>" }` を渡すと、列をそのProjectに固定する。`view: "sun"` なら太陽の画面、`view: "moon"` なら設定の画面に固定する（これも見た目の確認用）。
 - 太陽系のブロックに `props: { demo: true, flip: 3 }` を渡すと、3秒後に見本の「進めた」の惑星を idle に変える（輪が消える動きの確認用）。
 - どのブロックにも `props: { limit: 5 }` や `props: { still: true }` を渡せる。保存した設定より優先する（これも見た目の確認用。3つのブロックに同じ値を渡す）。
+- **`mods/solar/main.test.ts`**：Herdr なしで動かすテスト。画面の部品と Herdr の関数を偽物に差し替える。`~/.config/herdr-app/mods/solar/` で `bun test` を実行する。`main.ts` を直したら、コンパイルの前に通す。
+- **dotfiles の `.fallowrc.jsonc`**：fallow（未使用・重複・複雑さを調べる道具）に、`main.ts` は Herdr が読む入口、`main.js` は生成物、`herdr`・`gpui-kit`・`gpui-base` は Herdr が提供するモジュール、と教える設定。
 - **`mods/solar/RECIPE.md`**：この文書。`main.ts` と同じ場所で管理する。
 - **`mods/solar/mod.json`**：`{"place":"none"}`（pasture と同じ）。
 - **`mods/solar/*.svg`**：同梱済み。`image("mods/solar/earth.svg")` のように読む。`ring-arc.svg` だけは回すので `svg(...).spin(…)`（文字色で着色されるので、色は `#D5D7DD` を指定）。
 
 使うHerdrの関数：`spaces()`、`agents()`、`machines()`、`run()`、`hc()`、`exec()`、`home()`、`appHome()`、`notify()`、`shared()`／`setShared()`、`props()`。入力欄は `gpui-base` の `TextareaState` と `Textarea`。
 
-`mods/solar/SUN.md`：太陽への指示文。
+`mods/solar/orbit.sh`：空いている軌道の数を出すスクリプト（Agent が使う）。`mods/solar/SUN.md`：太陽への指示文。`mods/solar/PLANET.md`：惑星のAgentへの指示文。
 
-共有する値（`shared`）：`solar.slots`（枠の割り当て）、`solar.freed`（空いた順）、`solar.view`（詳細の列に出すもの。`{ kind: "home" }`、`{ kind: "project", space }`、`{ kind: "sun" }`、`{ kind: "moon" }`）、`solar.limit`、`solar.still`、`solar.closed`（閉じたProjectの数）、`solar.closing`（列から閉じたばかりのスペース）。
+共有する値（`shared`）：`solar.known`（閉じたProjectの記録用に控える、スペースの名前とフォルダ）、`solar.slots`（枠の割り当て）、`solar.freed`（空いた順）、`solar.view`（詳細の列に出すもの。`{ kind: "home" }`、`{ kind: "project", space }`、`{ kind: "sun" }`、`{ kind: "moon" }`）、`solar.limit`、`solar.still`、`solar.closed`（閉じたProjectの数）、`solar.closing`（列から閉じたばかりのスペース）。
 
 ## dotfiles への写し方
 

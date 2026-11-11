@@ -2,9 +2,8 @@
 // `bunx -p typescript@latest tsc -p .` を実行して main.js を作り直す。
 import { View, div, image, svg } from "gpui-kit";
 import type { AsyncContext, Context, NativeElement } from "gpui-kit";
-import { h_flex, v_flex, Textarea, TextareaState } from "gpui-base";
-import type { TextareaState as Draft } from "gpui-base";
-import { spaces, agents, machines, props, shared, setShared, run, hc, exec, home, appHome, notify } from "herdr";
+import { h_flex, v_flex } from "gpui-base";
+import { spaces, agents, machines, terminals, props, theme, shared, setShared, run, hc, exec, home, appHome, notify, openOverlay, closeOverlay } from "herdr";
 
 // Herdrの型は working / blocked / done / idle だけだが、herdr本体は分類できないAgentを unknown と報告する。
 type State = "working" | "blocked" | "done" | "idle" | "unknown" | null;
@@ -14,6 +13,7 @@ interface Body {
   id: string;
   name: string;
   status: State;
+  folder?: string;
 }
 
 interface Crew {
@@ -27,6 +27,15 @@ interface Crew {
 interface Point {
   x: number;
   y: number;
+}
+
+// 太陽系を描く場所。S は正方形の一辺、d は惑星の大きさ、at は枠と進んだ角度から位置を出す。
+interface Sky {
+  S: number;
+  cx0: number;
+  cy0: number;
+  d: number;
+  at: (slot: number, travelled?: number) => Point;
 }
 
 type Slots = Record<string, number>;
@@ -60,6 +69,12 @@ const DANGER: Hex = "#E5746A";
 const ON_DANGER: Hex = "#3A0D09";
 const ARC: Hex = "#D5D7DD";
 const MONO = "JetBrains Mono";
+// 閉じたProjectの記録の置き場所（~/.config/herdr-app の下）。その場の状態なので dotfiles には写さない。
+const CLOSED_DIR = "data/solar";
+const CLOSED_FILE = "closed.tsv";
+type Known = Record<string, { name: string; folder: string }>;
+// 重ねて開いたターミナルの上の帯の高さ。
+const HEAD = 34;
 
 const SLOTS = 8;
 // 太陽系の正方形は、箱の短い辺より少し小さくする。いちばん外の惑星の名前と衛星の輪が端で切れないようにするため。
@@ -72,7 +87,7 @@ const SUN_ASKS: Hex = "#F4F1E6";
 // 太陽が新しいProjectのフォルダを作る場所（ホームからの相対）。太陽はここで起動する。
 const PROJECTS = "workspace/solar";
 // 太陽に許すコマンド。これ以外を実行しようとすると、太陽は止まって聞いてくる。
-const SUN_TOOLS = ["Bash(mkdir *)", "Bash(herdr-app do space.new *)"];
+const SUN_TOOLS = ["Bash(mkdir *)", "Bash(herdr-app do space.new *)", "Bash(*/herdr-app/mods/solar/orbit.sh)"];
 const PLANETS = ["mercury", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune"];
 const PROVIDERS: Record<string, { name: string; color: Hex }> = {
   "claude-code": { name: "Claude", color: "#D97757" },
@@ -108,6 +123,8 @@ const RIPPLE = { duration: 900, easing: "ease-out" } as const;
 const ORBIT_STEP = RADII.map((r) => (360 * (TICK / 1000)) / (120 * (r / RADII[0]) ** 1.5));
 // 保存は1秒ごと。この回数だけ続けて見えなかったスペースの枠を空ける。
 const RELEASE_AFTER = 5;
+// 太陽がいない状態がこの秒数だけ続いたら、自動で起こす。
+const WAKE_AFTER = 3;
 // 惑星が消えた場所に、輪郭を残す時間。
 const GHOST = 6000;
 // 列から閉じたスペースは、この時間だけ「すぐ枠を空けてよい」と覚えておく。
@@ -139,34 +156,35 @@ const DEMO_AGENTS: Crew[] = [
 // 「一度も使っていない枠（内側から）」→「空いて古い順」で入れる。
 // 上限の内側に空きがあれば内側を先に使い、なければ外側の枠に入れる。
 // 上限が止めるのは太陽への依頼だけで、Herdr本体で作られたスペースは8個まで惑星にする。
-function assign(saved: Slots, freed: number[], ids: string[], limit: number): Assignment {
+export function assign(saved: Slots, freed: number[], ids: string[], limit: number): Assignment {
   const alive = new Set(ids);
-  const slots: Slots = {};
-  const nextFreed = [...freed];
-  let changed = false;
-  for (const [id, slot] of Object.entries(saved)) {
-    if (alive.has(id)) {
-      slots[id] = slot;
-    } else {
-      changed = true;
-      if (!nextFreed.includes(slot)) nextFreed.push(slot);
-    }
-  }
+  const entries = Object.entries(saved);
+  const slots: Slots = Object.fromEntries(entries.filter(([id]) => alive.has(id)));
+  const gone = entries.filter(([id]) => !alive.has(id)).map(([, slot]) => slot);
+  const nextFreed = [...freed, ...gone.filter((slot) => !freed.includes(slot))];
+  let changed = gone.length > 0;
   for (const id of ids) {
     if (slots[id]) continue;
-    const taken = new Set(Object.values(slots));
-    const open: number[] = [];
-    for (let s = 1; s <= SLOTS; s++) if (!taken.has(s)) open.push(s);
-    if (open.length === 0) break;
-    const rank = (s: number): number => (s > limit ? SLOTS + 1 : 0) + (nextFreed.includes(s) ? 1 + nextFreed.indexOf(s) : 0);
-    open.sort((a, b) => rank(a) - rank(b) || a - b);
-    const slot = open[0];
+    const slot = pick(new Set(Object.values(slots)), nextFreed, limit);
+    if (slot === undefined) break;
     slots[id] = slot;
     const at = nextFreed.indexOf(slot);
     if (at >= 0) nextFreed.splice(at, 1);
     changed = true;
   }
   return { slots, freed: nextFreed, changed };
+}
+
+// 空いている枠のうち、次に使う1つ。空きがなければ undefined。
+function pick(taken: Set<number>, freed: number[], limit: number): number | undefined {
+  const rank = (s: number): number => (s > limit ? SLOTS + 1 : 0) + (freed.includes(s) ? 1 + freed.indexOf(s) : 0);
+  let best: number | undefined;
+  for (let s = 1; s <= SLOTS; s++) {
+    if (taken.has(s)) continue;
+    // 同じ順位なら内側を残すので、より小さい順位のときだけ入れ替える。
+    if (best === undefined || rank(s) < rank(best)) best = s;
+  }
+  return best;
 }
 
 export default class Solar extends View {
@@ -180,9 +198,6 @@ export default class Solar extends View {
   above: Record<string, boolean> = {};
   // 詳細の列で、スペースごとに選んでいるAgent。
   picked: Record<string, string> = {};
-  // 詳細の列の、太陽に頼む文の入力欄。
-  draft: Draft | null = null;
-  text = "";
   // 詳細の列で、「閉じる」を1回押してあるスペース。
   arming: string | null = null;
   // 前の描画で軌道に出ていたスペースと、その枠。消えた惑星を見つけるために持つ。
@@ -196,19 +211,27 @@ export default class Solar extends View {
   age = 0;
   // 消えた惑星の輪郭。
   ghosts: { slot: number; travelled: number; until: number }[] = [];
+  // 太陽を自動で起こす役目が済んだか。開いてから1回だけ。閉じた太陽を勝手に戻さないために持つ。
+  woken = false;
+  // 太陽がいない状態が、何秒続けて見えたか。
+  sunless = 0;
 
   init(_props: unknown, cx: AsyncContext): void {
-    if (this.role() === "detail") {
-      this.draft = TextareaState.new({ placeholder: "頼みたいことを書く", rows: 6 });
-      this.draft.on("change", (_event, cx) => { this.text = this.draft?.value() ?? ""; cx.notify(); });
+    // いつものレイアウトに置く灯り。Solar を開いていない間も、枠の保存と閉じた記録を続ける。
+    // 太陽系と灯りは別のレイアウトにあるので、同時には動かない。
+    if (this.role() === "lamp") {
+      if (!this.demo()) this.persist();
+      cx.timer.every(1000, () => { if (!this.demo()) this.persist(); });
+      return;
     }
     if (this.role() !== "solar") return;
     cx.timer.every(TICK, (cx) => this.tick(cx));
-    // 保存は太陽系のコピーだけが行う。render中のsetSharedは再描画のループになるので、
+    // 保存は太陽系（と灯り）のコピーだけが行う。render中のsetSharedは再描画のループになるので、
     // ここと低頻度のタイマーから書く。
     if (!this.demo()) this.persist();
     cx.timer.every(1000, (cx) => {
       if (!this.demo()) this.persist();
+      if (!this.demo()) this.dawn();
       // 輪郭を消す時刻が来たときと、輪の動きを進めるときだけ描き直す。
       const now = Date.now();
       let dirty = this.ghosts.some((g) => g.until <= now);
@@ -292,12 +315,9 @@ export default class Solar extends View {
     return list.filter((s) => slots[s.id]).sort((a, b) => slots[a.id] - slots[b.id]);
   }
 
-  // 上限の内側に、空いた枠がないか。太陽に新しく頼めるかどうかを決める。
-  full(): boolean {
-    const list = this.bodies();
-    const { slots } = this.assignment(list);
-    const limit = this.limit();
-    return list.filter((s) => slots[s.id] && slots[s.id] <= limit).length >= limit;
+  // 枠をもらえなかったスペースの数。見えない所で誰かが待つことになるので、帯で知らせる。
+  outside(): number {
+    return this.bodies().length - this.shown().length;
   }
 
   persist(): void {
@@ -306,9 +326,16 @@ export default class Solar extends View {
     if (spaces().length === 0) return;
     // レイアウトの切り替え直後などに、スペースが一瞬だけ一覧から消えることがある。
     // そこで枠を空けると惑星が入れ替わるので、続けて見えないときだけ空ける。
-    const ids = this.bodies().map((s) => s.id);
+    const bodies = this.bodies();
+    const ids = bodies.map((s) => s.id);
     const alive = new Set(ids);
     const saved = (shared("solar.slots") ?? {}) as Slots;
+    // 閉じたあとでは名前とフォルダを読めないので、見えているうちに控えておく。
+    const known = (shared("solar.known") ?? {}) as Known;
+    const next: Known = {};
+    for (const id of Object.keys(saved)) if (known[id]) next[id] = known[id];
+    for (const s of bodies) next[s.id] = { name: s.name, folder: s.folder ?? "" };
+    if (JSON.stringify(next) !== JSON.stringify(known)) setShared("solar.known", next);
     const missing: Record<string, number> = {};
     for (const id of Object.keys(saved)) {
       if (!alive.has(id)) missing[id] = (this.missing[id] ?? 0) + 1;
@@ -324,8 +351,25 @@ export default class Solar extends View {
     setShared("solar.slots", r.slots);
     setShared("solar.freed", r.freed);
     // 枠が空いた数だけ「閉じたProject」を増やす。Herdr本体で閉じたスペースも数える。
-    const released = Object.keys(saved).filter((id) => !(id in r.slots)).length;
-    if (released > 0) setShared("solar.closed", Number(shared("solar.closed") ?? 0) + released);
+    const released = Object.keys(saved).filter((id) => !(id in r.slots));
+    if (released.length === 0) return;
+    setShared("solar.closed", Number(shared("solar.closed") ?? 0) + released.length);
+    record(released.map((id) => next[id] ?? { name: id, folder: "" }));
+    setShared("solar.known", Object.fromEntries(Object.entries(next).filter(([id]) => !released.includes(id))));
+  }
+
+  // 開いたときに太陽がいなければ、自動で起こす。最初は太陽だけがいて、そこから惑星を作る流れにするため。
+  dawn(): void {
+    if (this.woken) return;
+    if (machines().some((m) => m.layout === "loading")) return;
+    if (this.sun().space) {
+      this.woken = true;
+      return;
+    }
+    // 起動直後はスペースがまだ読めていないことがある。続けて見えないときだけ起こす。
+    if (++this.sunless < WAKE_AFTER) return;
+    this.woken = true;
+    this.wake();
   }
 
   tick(cx: AsyncContext): void {
@@ -345,102 +389,101 @@ export default class Solar extends View {
     const role = this.role();
     if (role === "detail") return this.detail();
     if (role === "bar") return this.bar();
+    if (role === "head") return this.head();
+    if (role === "lamp") return this.lamp();
 
     const root = div().id("solar-root").relative().size_full().bg(BG).overflow_hidden()
       .on_size_change((size, cx) => { this.size = size; cx.notify(); });
     if (!this.size || !(this.size.width > 0) || !(this.size.height > 0)) return root;
 
-    const S = FIT * Math.min(this.size.width, this.size.height);
-    const cx0 = this.size.width / 2;
-    const cy0 = this.size.height / 2;
-    const at = (slot: number, travelled = 0): Point => {
-      const r = RADII[slot - 1] * S;
-      const a = rad(SLOT_ANGLE[slot - 1] + travelled);
-      return { x: cx0 + r * Math.cos(a), y: cy0 + r * Math.sin(a) };
-    };
-
-    const list = this.bodies();
-    const { slots } = this.assignment(list);
-    const limit = this.limit();
-    const crews = this.crews();
-
-    const parts: NativeElement[] = [
-      div().absolute().left(cx0 - S / 2).top(cy0).w(S).h(1).bg(CROSS),
-      div().absolute().left(cx0).top(cy0 - S / 2).w(1).h(S).bg(CROSS),
-    ];
-    // 惑星がいる軌道は、上限の外でも実線のままにする。
-    const used = new Set(list.map((s) => slots[s.id]));
-    for (let i = 0; i < SLOTS; i++) {
-      const ring = disc(cx0, cy0, 2 * RADII[i] * S).border(1);
-      parts.push(i < limit || used.has(i + 1) ? ring.border_color(ORBIT) : ring.border_color(ORBIT_OFF).border_dashed());
-    }
-    // 太陽自身の状態。Agentがいなければ暗くし、作業中は弧、質問中は白っぽい太い輪と「！」。
+    const sky = layout(this.size);
+    // slots に入るのは、いま一覧にいて枠を持つスペースだけ。
+    const { slots } = this.assignment(this.bodies());
     const still = Boolean(this.setting("still"));
-    const sun = this.sun().agent;
-    const sunSize = SUN_SIZE * S;
-    const star = pic("sun", cx0, cy0, sunSize);
-    parts.push(sun ? star : star.opacity(DIM));
-    if (sun?.status === "working") {
-      const ring = 1.3 * sunSize;
-      const arc = svg(`${ART}/ring-arc.svg`).absolute().left(cx0 - ring / 2).top(cy0 - ring / 2).size(ring).text_color(ARC);
-      parts.push(still ? arc : arc.spin(8000));
-    }
-    if (sun?.status === "blocked") {
-      parts.push(disc(cx0, cy0, 1.2 * sunSize).border(4).border_color(SUN_ASKS));
-      const mark = 0.3 * sunSize;
-      parts.push(h_flex().absolute().left(cx0 + 0.42 * sunSize - mark / 2).top(cy0 - 0.42 * sunSize - mark / 2).size(mark)
-        .rounded(0.28 * mark).bg(SUN_ASKS).items_center().justify_center()
-        .text_size(0.7 * mark).font_bold().text_color(BG).child("!"));
-    }
-    parts.push(disc(cx0, cy0, sunSize).id("sun-hit").cursor_pointer().on_click(() => setShared("solar.view", { kind: "sun" })));
+    return root.children([
+      ...orbits(sky, this.limit(), new Set(Object.values(slots))),
+      ...this.star(sky, still),
+      ...this.planets(sky, slots, still),
+      ...this.outlines(sky, slots),
+      ...this.satelliteOfEarth(sky, slots),
+    ]);
+  }
 
-    const d = Math.max(44, 0.08 * S);
-    // 月は枠3の位置を中心に回る。枠3が空でも、枠3の軌道上に出す。
-    let earth = at(3);
-    const live: Record<string, number> = {};
-    for (const space of list) {
+  // 太陽と、太陽自身の状態。Agentがいなければ暗くし、作業中は弧、質問中は白っぽい太い輪と「！」。
+  star(sky: Sky, still: boolean): NativeElement[] {
+    const { cx0, cy0 } = sky;
+    const sun = this.sun().agent;
+    const size = SUN_SIZE * sky.S;
+    const body = pic("sun", cx0, cy0, size);
+    const hit = disc(cx0, cy0, size).id("sun-hit").cursor_pointer().on_click(() => this.ask());
+    return [sun ? body : body.opacity(DIM), ...sunSigns(sky, sun?.status ?? null, still), hit];
+  }
+
+  planets(sky: Sky, slots: Slots, still: boolean): NativeElement[] {
+    const crews = this.crews();
+    const parts: NativeElement[] = [];
+    for (const space of this.bodies()) {
       const slot = slots[space.id];
       if (!slot) continue;
-      const p = at(slot, this.travelled[space.id] ?? 0);
-      if (slot === 3) earth = p;
-      live[space.id] = slot;
-      // 名前は太陽と反対側に出す。水平線の近くでは、前の側のままにする。
-      const dy = p.y - cy0;
-      const before = this.above[space.id];
-      const above = before !== undefined && Math.abs(dy) < FLIP_GUARD * RADII[slot - 1] * S ? before : dy < 0;
-      this.above[space.id] = above;
-      planet(parts, space, slot, crews.get(space.id) ?? [], p, d, above, still);
-      // 「進めた」を人が見ると idle に変わる。その瞬間に、緑の輪が外へ広がって消える動きを1回だけ出す。
-      if (this.statuses[space.id] === "done" && space.status === "idle") this.ripples[space.id] = { grown: false, until: 0 };
-      this.statuses[space.id] = space.status;
-      const ripple = this.ripples[space.id];
-      if (ripple) {
-        const size = (ripple.grown ? 1.8 : 0.92) * d;
-        parts.push(disc(p.x, p.y, size).id(`planet-${space.id}-ripple`).border(2).border_color(DONE).opacity(ripple.grown ? 0 : 1)
-          .transition("width", RIPPLE).transition("height", RIPPLE).transition("left", RIPPLE).transition("top", RIPPLE).transition("opacity", RIPPLE));
-      }
+      const p = sky.at(slot, this.travelled[space.id] ?? 0);
+      const crew = crews.get(space.id) ?? [];
+      // 2回続けて押したときに開くのは、詳細の列が最初に選ぶのと同じ、いちばん急ぎのAgent。
+      const first = byUrgency(crew)[0];
+      const peek = (): void => { if (first && !this.demo()) openTerminal(first.address); };
+      planet(parts, space, slot, crew, p, sky.d, this.side(space.id, slot, p.y - sky.cy0, sky.S), still, peek);
+      const ripple = this.ripple(space, p, sky.d);
+      if (ripple) parts.push(ripple);
     }
+    return parts;
+  }
 
-    // 惑星が消えた場所に、点線の輪郭をしばらく残す。同じ枠に次の惑星が入ったら消す。
+  // 名前は太陽と反対側に出す。水平線の近くでは、前の側のままにする。
+  side(id: string, slot: number, dy: number, S: number): boolean {
+    const before = this.above[id];
+    const near = Math.abs(dy) < FLIP_GUARD * RADII[slot - 1] * S;
+    const above = before !== undefined && near ? before : dy < 0;
+    this.above[id] = above;
+    return above;
+  }
+
+  // 「進めた」を人が見ると idle に変わる。その瞬間に、緑の輪が外へ広がって消える動きを1回だけ出す。
+  ripple(space: Body, p: Point, d: number): NativeElement | null {
+    if (this.statuses[space.id] === "done" && space.status === "idle") this.ripples[space.id] = { grown: false, until: 0 };
+    this.statuses[space.id] = space.status;
+    const ripple = this.ripples[space.id];
+    if (!ripple) return null;
+    const size = (ripple.grown ? 1.8 : 0.92) * d;
+    return disc(p.x, p.y, size).id(`planet-${space.id}-ripple`).border(2).border_color(DONE).opacity(ripple.grown ? 0 : 1)
+      .transition("width", RIPPLE).transition("height", RIPPLE).transition("left", RIPPLE).transition("top", RIPPLE).transition("opacity", RIPPLE);
+  }
+
+  // 惑星が消えた場所に、点線の輪郭をしばらく残す。同じ枠に次の惑星が入ったら消す。
+  outlines(sky: Sky, slots: Slots): NativeElement[] {
     const now = Date.now();
     for (const [id, slot] of Object.entries(this.seen)) {
-      if (!(id in live)) this.ghosts.push({ slot, travelled: this.travelled[id] ?? 0, until: now + GHOST });
+      if (!(id in slots)) this.ghosts.push({ slot, travelled: this.travelled[id] ?? 0, until: now + GHOST });
     }
-    this.seen = live;
-    const taken = new Set(Object.values(live));
+    this.seen = slots;
+    const taken = new Set(Object.values(slots));
     this.ghosts = this.ghosts.filter((g) => g.until > now && !taken.has(g.slot));
-    for (const g of this.ghosts) {
-      const p = at(g.slot, g.travelled);
-      parts.push(disc(p.x, p.y, 0.6 * d).border(1).border_color(TEXT_FAINT).border_dashed());
-    }
+    return this.ghosts.map((g) => {
+      const p = sky.at(g.slot, g.travelled);
+      return disc(p.x, p.y, 0.6 * sky.d).border(1).border_color(TEXT_FAINT).border_dashed();
+    });
+  }
 
+  // 月は枠3の位置を中心に回る。枠3が空でも、枠3の軌道上に出す。
+  satelliteOfEarth(sky: Sky, slots: Slots): NativeElement[] {
+    const id = Object.keys(slots).find((key) => slots[key] === 3);
+    const earth = sky.at(3, id ? this.travelled[id] ?? 0 : 0);
     const m = rad(MOON_START + this.moon);
-    const mx = earth.x + 0.085 * S * Math.cos(m);
-    const my = earth.y + 0.085 * S * Math.sin(m);
-    parts.push(glide(pic("moon", mx, my, 22), "moon"));
-    // 月は小さいので、押せる範囲は44pxに広げる。
-    parts.push(glide(disc(mx, my, 44), "moon-hit").cursor_pointer().on_click(() => setShared("solar.view", { kind: "moon" })));
-    return root.children(parts);
+    const x = earth.x + 0.085 * sky.S * Math.cos(m);
+    const y = earth.y + 0.085 * sky.S * Math.sin(m);
+    return [
+      glide(pic("moon", x, y, 22), "moon"),
+      // 月は小さいので、押せる範囲は44pxに広げる。
+      glide(disc(x, y, 44), "moon-hit").cursor_pointer().on_click(() => setShared("solar.view", { kind: "moon" })),
+    ];
   }
 
   detail(): NativeElement {
@@ -507,7 +550,7 @@ export default class Solar extends View {
     ];
   }
 
-  // 太陽を押したときの列。太陽に頼む文を書いて渡す。
+  // 太陽の列。太陽がいないとき・止まっているときに出る。いるときは、押すとターミナルが開く。
   request(shown: Body[]): NativeElement[] {
     const back = (text: string): NativeElement => button("home", text, CROSS, TEXT_DIM, 44, () => setShared("solar.view", { kind: "home" }));
     const label = div().text_size(12).font_family(MONO).text_color(TEXT_FAINT).child("太陽（Claude Code）");
@@ -525,33 +568,26 @@ export default class Solar extends View {
     if (agent.status === "blocked") {
       // 質問には文章で答えられないので、ターミナルを開いて本人が答える。
       return [label, title("太陽が質問しています"), note("ターミナルを開いて、答えてください"),
-        button("peek-sun", "ターミナルを開く", SUN_ASKS, BG, 56, () => { if (!this.demo()) run("terminal.peek", { terminal: agent.address }); }),
+        button("peek-sun", "ターミナルを開く", SUN_ASKS, BG, 56, () => this.ask()),
         back("ホームに戻る")];
     }
-    if (this.full()) {
-      return [label, title("軌道がいっぱいです"), note("Projectを1つ閉じるか、並列の数を増やすと頼めます"), back("ホームに戻る")];
+    return [label, title("太陽に頼む"), note("ターミナルで頼みます。音声入力や @ファイル、/skill が使えます"),
+      button("peek-sun", "ターミナルを開く", TEXT, BG, 56, () => this.ask()), back("ホームに戻る")];
+  }
+
+  // 太陽に頼む。入力欄ではなく太陽のターミナルを開く。音声入力や @ファイル、/skill をそのまま使うため。
+  // 手が空いている太陽には、先に /clear を送る。前の依頼のやり取りを消して、読むものを減らす。
+  // 役目は起動時の SUN.md にあるので、消えない。作業中・質問中の太陽は、そのまま開く。
+  ask(): void {
+    const agent = this.sun().agent;
+    if (this.demo() || !agent) {
+      setShared("solar.view", { kind: "sun" });
+      return;
     }
-    const draft = this.draft;
-    const ready = this.text.trim().length > 0;
-    return [
-      label, title("何を頼みますか"),
-      ...(draft ? [Textarea.new(draft).flex_none().h(150).p(10).rounded(10).border(1).border_color(LINE).bg(CROSS).text_size(14).text_color(TEXT)] : []),
-      note("Claude Code（Fable）が受け取ります。ローカルにフォルダを作り、空いている軌道に出します"),
-      button("hand", "渡す", ready ? TEXT : CROSS, ready ? BG : TEXT_FAINT, 56, () => {
-        if (!ready) return;
-        const text = this.text.trim();
-        this.draft?.set_value("");
-        this.text = "";
-        setShared("solar.view", { kind: "home" });
-        if (this.demo()) return;
-        hc(["send", agent.address, text])
-          .then((r) => notify(r.code === 0
-            ? { title: "太陽に渡しました", level: "success" }
-            : { title: "太陽に渡せませんでした", body: r.stderr.trim().slice(0, 80), level: "error" }))
-          .catch((e) => notify({ title: "太陽に渡せませんでした", body: String(e).slice(0, 80), level: "error" }));
-      }),
-      back("やめる"),
-    ];
+    const open = (): void => openTerminal(agent.address);
+    if (agent.status === "working" || agent.status === "blocked") open();
+    // hc send は送り主の印で文を包むので、コマンドとして働かない。キーを1つずつ押して入力する。
+    else hc(["keys", agent.address, ..."/clear".split(""), "enter"]).then(open, open);
   }
 
   // 太陽を起こす。sun という名前のスペースを作り、Claude Code（Fable）を役目の文書つきで起動する。
@@ -568,59 +604,97 @@ export default class Solar extends View {
   }
 
   project(space: Body): NativeElement[] {
-    const crew = [...(this.crews().get(space.id) ?? [])].sort((a, b) => URGENCY[a.status ?? "unknown"] - URGENCY[b.status ?? "unknown"]);
+    const crew = byUrgency(this.crews().get(space.id) ?? []);
     // 最初は、いちばん急ぎのAgentを選んでおく。
     const chosen = crew.find((a) => a.address === this.picked[space.id]) ?? crew[0];
     const tone = space.status === "blocked" ? BLOCKED : space.status === "done" ? DONE : TEXT_FAINT;
     const state = space.status ? `${WORDS[space.status]}・Agent ${crew.length}体` : "Agentなし";
-    const parts: NativeElement[] = [
+    return [
       div().text_size(12).font_family(MONO).text_color(tone).child(state),
       div().text_size(26).font_bold().font_family(MONO).truncate().child(space.name),
+      ...crew.map((agent) => this.row(space, agent, crew.length > 1, agent === chosen)),
+      ...(chosen ? [this.peek(chosen)] : []),
+      button("home", "ホームに戻る", CROSS, TEXT_DIM, 44, () => setShared("solar.view", { kind: "home" })),
+      // 「閉じる」は列のいちばん下に離して置く。押し間違いを防ぐため。
+      div().flex_1(),
+      this.closer(space),
     ];
-    for (const agent of crew) {
-      const provider = PROVIDERS[agent.app ?? ""] ?? PROVIDER_OTHER;
-      const row = h_flex().id(`agent-${agent.address}`).gap(8).px(8).py(6).rounded(8).items_center().text_size(13)
-        .child(satellite(div().flex_none().size(10).rounded_full(), agent))
-        .child(div().flex_1().min_w(0).truncate().font_family(MONO).child(agent.name))
-        .child(div().flex_none().text_color(TEXT_DIM).child(provider.name));
-      if (crew.length === 1) {
-        parts.push(row);
-        continue;
-      }
-      // 2体以上のときだけ、行で選べる。状態も行に出す。
-      parts.push(row
-        .child(div().flex_none().text_color(TEXT_FAINT).child(WORDS[agent.status ?? "unknown"]))
-        .bg(agent === chosen ? CROSS : BG).cursor_pointer()
-        .on_click((_event, cx) => { this.picked[space.id] = agent.address; cx.notify(); }));
+  }
+
+  // Agentの1行。2体以上のときだけ、行で選べる。状態も行に出す。
+  row(space: Body, agent: Crew, choosable: boolean, chosen: boolean): NativeElement {
+    const provider = PROVIDERS[agent.app ?? ""] ?? PROVIDER_OTHER;
+    const row = h_flex().id(`agent-${agent.address}`).gap(8).px(8).py(6).rounded(8).items_center().text_size(13)
+      .child(satellite(div().flex_none().size(10).rounded_full(), agent))
+      .child(div().flex_1().min_w(0).truncate().font_family(MONO).child(agent.name))
+      .child(div().flex_none().text_color(TEXT_DIM).child(provider.name));
+    if (!choosable) return row;
+    return row
+      .child(div().flex_none().text_color(TEXT_FAINT).child(WORDS[agent.status ?? "unknown"]))
+      .bg(chosen ? CROSS : BG).cursor_pointer()
+      .on_click((_event, cx) => { this.picked[space.id] = agent.address; cx.notify(); });
+  }
+
+  // blocked は承認や質問の画面が出ている状態で、文章を送っても答えにならない。
+  // だから列からは答えさせず、ターミナルを開いて本人がその画面で答える。
+  peek(agent: Crew): NativeElement {
+    const waiting = agent.status === "blocked";
+    return button("peek", "ターミナルを開く", waiting ? BLOCKED : TEXT, waiting ? ON_BLOCKED : BG, 56, () => {
+      if (!this.demo()) openTerminal(agent.address);
+    });
+  }
+
+  // 閉じるとAgentが終了し、元に戻せない。1回目は文言を変えるだけで、2回目で閉じる。
+  closer(space: Body): NativeElement {
+    if (this.arming !== space.id) {
+      return button("close", "このProjectを閉じる", CROSS, TEXT_DIM, 44, (cx) => { this.arming = space.id; cx.notify(); });
     }
-    if (chosen) {
-      // blocked は承認や質問の画面が出ている状態で、文章を送っても答えにならない。
-      // だから列からは答えさせず、ターミナルを開いて本人がその画面で答える。
-      const waiting = chosen.status === "blocked";
-      parts.push(button("peek", "ターミナルを開く", waiting ? BLOCKED : TEXT, waiting ? ON_BLOCKED : BG, 56, () => {
-        if (!this.demo()) run("terminal.peek", { terminal: chosen.address });
-      }));
-    }
-    parts.push(button("home", "ホームに戻る", CROSS, TEXT_DIM, 44, () => setShared("solar.view", { kind: "home" })));
-    // 「閉じる」は列のいちばん下に離して置く。押し間違いを防ぐため。
-    parts.push(div().flex_1());
-    // 閉じるとAgentが終了し、元に戻せない。1回目は文言を変えるだけで、2回目で閉じる。
-    const armed = this.arming === space.id;
-    parts.push(button("close", armed ? "本当に閉じる（元に戻せません）" : "このProjectを閉じる",
-      armed ? DANGER : CROSS, armed ? ON_DANGER : TEXT_DIM, 44, (cx) => {
-        if (!armed) {
-          this.arming = space.id;
-          cx.notify();
-          return;
-        }
-        this.arming = null;
-        if (this.demo()) return;
-        const closing = (shared("solar.closing") ?? {}) as Record<string, number>;
-        setShared("solar.closing", { ...closing, [space.id]: Date.now() });
-        setShared("solar.view", { kind: "home" });
-        run("space.close", { id: space.id, confirmed: true });
-      }));
-    return parts;
+    return button("close", "本当に閉じる（元に戻せません）", DANGER, ON_DANGER, 44, () => {
+      this.arming = null;
+      if (this.demo()) return;
+      const closing = (shared("solar.closing") ?? {}) as Record<string, number>;
+      setShared("solar.closing", { ...closing, [space.id]: Date.now() });
+      setShared("solar.view", { kind: "home" });
+      run("space.close", { id: space.id, confirmed: true });
+    });
+  }
+
+  // 重ねて開いたターミナルの上の帯。どのフォルダのターミナルかを、開いた瞬間に分かるようにする。
+  head(): NativeElement {
+    const { terminal, overlay } = (props() ?? {}) as { terminal?: string; overlay?: string };
+    const found = terminals().find((t) => t.address === terminal);
+    // シェルが別のフォルダで起動していても、動いているプログラムのフォルダを優先する。
+    const path = String(found?.foreground?.cwd ?? found?.cwd ?? "");
+    const short = path.startsWith(home()) ? `~${path.slice(home().length)}` : path;
+    const name = path.split("/").filter(Boolean).pop() ?? "";
+    return h_flex().size_full().bg(BG).border_b(1).border_color(LINE).px(14).gap(10).items_center().text_size(12)
+      .child(div().flex_none().font_bold().font_family(MONO).text_size(14).text_color(TEXT).child(name || "（フォルダ不明）"))
+      .child(div().truncate().font_family(MONO).text_color(TEXT_FAINT).child(short))
+      .child(div().flex_1())
+      .child(div().id("close-terminal").flex_none().px(8).py(2).rounded(5).text_color(TEXT_DIM).cursor_pointer()
+        .hover((style) => style.bg(CROSS).text_color(TEXT))
+        .on_click(() => { if (overlay) closeOverlay(overlay); })
+        .child("✕"));
+  }
+
+  // いつものレイアウトの端に置く灯り。待っている数と進めた数だけを出し、押すと Solar に切り替える。
+  // 0 のときも場所は変えず、暗くする。数が出た瞬間に、同じ場所が明るくなる。
+  lamp(): NativeElement {
+    // いつものレイアウトは明るい配色のこともあるので、Solar の色ではなくテーマの色を使う。
+    const t = theme() as Record<string, Hex>;
+    const shown = this.shown();
+    const item = (label: string, n: number, tone: Hex): NativeElement => h_flex().gap(6).items_center().opacity(n > 0 ? 1 : 0.45)
+      .child(div().flex_none().size(8).rounded(2).bg(n > 0 ? tone : t.dim))
+      .child(div().text_color(n > 0 ? t.foreground : t.dim).child(label))
+      .child(div().font_bold().font_family(MONO).text_color(n > 0 ? tone : t.dim).child(String(n)));
+    const outside = this.outside();
+    return h_flex().id("lamp").size_full().px(14).gap(14).items_center().text_size(12).cursor_pointer()
+      .on_click(() => { if (!this.demo()) run("layout.switch", { name: "solar" }); })
+      .child(item("待ってる", shown.filter((s) => s.status === "blocked").length, t.blocked))
+      .child(item("進めた", shown.filter((s) => s.status === "done").length, t.done))
+      .children(outside > 0 ? [h_flex().gap(6).items_center()
+        .child(div().text_color(t.blocked).child("軌道の外"))
+        .child(div().font_bold().font_family(MONO).text_color(t.blocked).child(String(outside)))] : []);
   }
 
   bar(): NativeElement {
@@ -639,9 +713,83 @@ export default class Solar extends View {
       .child(item("待ってる", String(count("blocked")), BLOCKED, mark().rounded(2).bg(BLOCKED)))
       .child(item("進めた", String(count("done")), DONE, mark().rounded(2).bg(DONE)))
       .child(item("作業中", String(count("working")), TEXT, mark().rounded_full().border(1).border_color(TEXT_DIM)))
+      .children(this.outside() > 0 ? [item("軌道の外", String(this.outside()), BLOCKED)] : [])
       .child(div().flex_1())
       .child(item("閉じたProject", String(Number(shared("solar.closed") ?? 0)), TEXT));
   }
+}
+
+// 閉じたProjectを、1件1行でファイルに足す。あとで「あの件どうなった」をたどるための記録。
+function record(closed: { name: string; folder: string }[]): void {
+  const now = new Date();
+  const two = (n: number): string => String(n).padStart(2, "0");
+  const stamp = `${now.getFullYear()}-${two(now.getMonth() + 1)}-${two(now.getDate())} ${two(now.getHours())}:${two(now.getMinutes())}`;
+  const clean = (text: string): string => text.replace(/[\t\n]/g, " ");
+  const lines = closed.map((c) => `${stamp}\t${clean(c.name)}\t${clean(c.folder)}`).join("\n");
+  const dir = `${appHome()}/${CLOSED_DIR}`;
+  exec("sh", ["-c", 'mkdir -p "$1" && printf "%s\\n" "$2" >> "$1/$3"', "sh", dir, lines, CLOSED_FILE])
+    .catch((e) => notify({ title: "閉じたProjectを記録できませんでした", body: String(e).slice(0, 80), level: "error" }));
+}
+
+// ターミナルを画面の上に重ねて開く。Herdr 既定の peek の代わりに、フォルダ名の帯（head）を上に付ける。
+function openTerminal(terminal: string): void {
+  openOverlay({
+    kind: "dialog",
+    width: 0.86,
+    height: 0.86,
+    layout: {
+      type: "column",
+      children: [
+        { type: "block", size: { px: HEAD }, content: { mod: "solar", props: { role: "head", terminal } } },
+        { type: "block", content: { terminal } },
+      ],
+    },
+  });
+}
+
+function layout(size: { width: number; height: number }): Sky {
+  const S = FIT * Math.min(size.width, size.height);
+  const cx0 = size.width / 2;
+  const cy0 = size.height / 2;
+  const at = (slot: number, travelled = 0): Point => {
+    const r = RADII[slot - 1] * S;
+    const a = rad(SLOT_ANGLE[slot - 1] + travelled);
+    return { x: cx0 + r * Math.cos(a), y: cy0 + r * Math.sin(a) };
+  };
+  return { S, cx0, cy0, d: Math.max(44, 0.08 * S), at };
+}
+
+// 十字の細線と8本の軌道。惑星がいる軌道は、上限の外でも実線のままにする。
+function orbits(sky: Sky, limit: number, used: Set<number>): NativeElement[] {
+  const { S, cx0, cy0 } = sky;
+  const rings = RADII.map((r, i) => {
+    const ring = disc(cx0, cy0, 2 * r * S).border(1);
+    return i < limit || used.has(i + 1) ? ring.border_color(ORBIT) : ring.border_color(ORBIT_OFF).border_dashed();
+  });
+  return [
+    div().absolute().left(cx0 - S / 2).top(cy0).w(S).h(1).bg(CROSS),
+    div().absolute().left(cx0).top(cy0 - S / 2).w(1).h(S).bg(CROSS),
+    ...rings,
+  ];
+}
+
+// 太陽のまわりに出す印。作業中は弧、質問中は白っぽい太い輪と「！」。
+function sunSigns(sky: Sky, status: State, still: boolean): NativeElement[] {
+  const { cx0, cy0 } = sky;
+  const size = SUN_SIZE * sky.S;
+  if (status === "working") {
+    const ring = 1.3 * size;
+    const arc = svg(`${ART}/ring-arc.svg`).absolute().left(cx0 - ring / 2).top(cy0 - ring / 2).size(ring).text_color(ARC);
+    return [still ? arc : arc.spin(8000)];
+  }
+  if (status !== "blocked") return [];
+  const mark = 0.3 * size;
+  return [
+    disc(cx0, cy0, 1.2 * size).border(4).border_color(SUN_ASKS),
+    h_flex().absolute().left(cx0 + 0.42 * size - mark / 2).top(cy0 - 0.42 * size - mark / 2).size(mark)
+      .rounded(0.28 * mark).bg(SUN_ASKS).items_center().justify_center()
+      .text_size(0.7 * mark).font_bold().text_color(BG).child("!"),
+  ];
 }
 
 function disc(x: number, y: number, size: number): NativeElement {
@@ -663,7 +811,7 @@ function button(id: string, text: string, bg: Hex, fg: Hex, height: number, acti
     .child(text).on_click((_event, cx) => action(cx));
 }
 
-function planet(parts: NativeElement[], space: Body, slot: number, crew: Crew[], p: Point, d: number, above: boolean, still: boolean): void {
+function planet(parts: NativeElement[], space: Body, slot: number, crew: Crew[], p: Point, d: number, above: boolean, still: boolean, peek: () => void): void {
   const status = space.status;
   // Agentがいないスペース（statusがnull）は、印なしでidleと同じ暗さにしている。
   const dim = status === "idle" || status === "unknown" || status == null;
@@ -671,26 +819,26 @@ function planet(parts: NativeElement[], space: Body, slot: number, crew: Crew[],
   if (crew.length > 0) {
     parts.push(glide(disc(p.x, p.y, 1.5 * d).border(1).border_color(ORBIT).border_dashed(), `${key}-moons`));
   }
-  if (status === "working") {
-    parts.push(glide(pic("ring-track", p.x, p.y, d), `${key}-track`));
-    // 動きがオフのあいだは、弧を回さずその場に残す。
-    const arc = svg(`${ART}/ring-arc.svg`).absolute().left(p.x - d / 2).top(p.y - d / 2).size(d).text_color(ARC);
-    parts.push(glide(still ? arc : arc.spin(8000), `${key}-arc`));
-  }
-  if (status === "blocked") parts.push(glide(pic("ring-blocked", p.x, p.y, d), `${key}-blocked`));
-  if (status === "done") parts.push(glide(pic("ring-done", p.x, p.y, d), `${key}-done`));
+  // 輪と印は、どの状態のぶんもいつも惑星と一緒に動かしておき、いまの状態のものだけ不透明にする。
+  // 状態が変わってから作ると、移動中の惑星を置いて、行き先に先に出てしまうため。
+  const mark = (el: NativeElement, on: boolean, id: string): void => { parts.push(glide(on ? el : el.opacity(0), `${key}-${id}`)); };
+  const working = status === "working";
+  mark(pic("ring-track", p.x, p.y, d), working, "track");
+  // 動きがオフのあいだは、弧を回さずその場に残す。見せていない弧も回さない。
+  const arc = svg(`${ART}/ring-arc.svg`).absolute().left(p.x - d / 2).top(p.y - d / 2).size(d).text_color(ARC);
+  mark(working && !still ? arc.spin(8000) : arc, working, "arc");
+  mark(pic("ring-blocked", p.x, p.y, d), status === "blocked", "blocked");
+  mark(pic("ring-done", p.x, p.y, d), status === "done", "done");
   const body = glide(pic(PLANETS[slot - 1], p.x, p.y, d), `${key}-body`);
   parts.push(dim ? body.opacity(DIM) : body);
   const badge = 0.38 * d;
-  if (status === "blocked" || status === "done" || status === "idle") {
-    parts.push(glide(pic(`badge-${status}`, p.x + 0.4 * d, p.y - 0.4 * d, badge), `${key}-badge`));
+  for (const kind of ["blocked", "done", "idle"]) {
+    mark(pic(`badge-${kind}`, p.x + 0.4 * d, p.y - 0.4 * d, badge), status === kind, `badge-${kind}`);
   }
-  if (status === "unknown") {
-    // 「？」の絵はないので、idleの印と同じ形を箱で作る。
-    parts.push(glide(h_flex().absolute().left(p.x + 0.4 * d - 0.4 * badge).top(p.y - 0.4 * d - 0.4 * badge).size(0.8 * badge)
-      .rounded(0.28 * badge).bg(BADGE).items_center().justify_center()
-      .text_size(0.55 * badge).font_bold().text_color(TEXT).child("?"), `${key}-badge`));
-  }
+  // 「？」の絵はないので、idleの印と同じ形を箱で作る。
+  mark(h_flex().absolute().left(p.x + 0.4 * d - 0.4 * badge).top(p.y - 0.4 * d - 0.4 * badge).size(0.8 * badge)
+    .rounded(0.28 * badge).bg(BADGE).items_center().justify_center()
+    .text_size(0.55 * badge).font_bold().text_color(TEXT).child("?"), status === "unknown", "badge-unknown");
   const size = Math.max(10, 0.22 * d);
   for (let i = 0; i < crew.length; i++) {
     const a = rad(SATELLITE_START + (360 / crew.length) * i);
@@ -706,8 +854,18 @@ function planet(parts: NativeElement[], space: Body, slot: number, crew: Crew[],
   parts.push(name(p.y - 0.75 * d - 6 - NAME_HEIGHT, above, `${key}-name-up`));
   parts.push(name(p.y + 0.75 * d + 6, !above, `${key}-name-down`));
   // 絵（image）は押しても反応しないので、押す範囲は透明な箱で上に重ねる。
+  // 1回押すと詳細の列に出す。2回続けて押すと、列を経ずにターミナルも開く。
+  // 3回目以降で開き直さないよう、ちょうど2回目だけで開く。
   parts.push(glide(disc(p.x, p.y, d), `${key}-hit`).cursor_pointer()
-    .on_click(() => setShared("solar.view", { kind: "project", space: space.id })));
+    .on_click((event) => {
+      setShared("solar.view", { kind: "project", space: space.id });
+      if (event.click_count === 2) peek();
+    }));
+}
+
+// 急ぎの順に並べたAgent。先頭が、詳細の列でも2回押しでも最初に選ばれる。
+function byUrgency(crew: Crew[]): Crew[] {
+  return [...crew].sort((a, b) => URGENCY[a.status ?? "unknown"] - URGENCY[b.status ?? "unknown"]);
 }
 
 function satellite(dot: NativeElement, agent: Crew): NativeElement {

@@ -1,0 +1,12 @@
+{
+  "entry": [
+    // Herdr が実行時に読み込む mod の入口。どこからも import されないので、入口として教える。
+    "herdr-app/mods/solar/main.ts",
+    // package.json がなく、テストの枠組みを自動で見つけられないので、bun のテストも入口として教える。
+    "**/*.test.ts"
+  ],
+  // main.ts をコンパイルした生成物。元と同じ内容なので、解析の対象から外す。
+  "ignorePatterns": ["herdr-app/mods/solar/main.js"],
+  // Herdr がアプリ内で提供するモジュール。npm のパッケージとしては存在しない。
+  "ignoreUnresolvedImports": ["herdr", "gpui-kit", "gpui-base"]
+}
