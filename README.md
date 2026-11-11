@@ -88,3 +88,5 @@ omp plugin install --scope user pstack@pstack-claude
 Claude Code側の公式版（0.15.36）はルートに標準形式の`plugin.json`を持つため、ompの探索元`agent-plugins`（Agent Plugins仕様のパッケージからスキルとMCPを読む仕組み）が`~/.claude/plugins/`から拾います。frontmatterの検査を通る`setup-pstack`だけが読まれ、素の名前を取ってomp版を`pstack/setup-pstack`へ押しのけるので、`disabledProviders`に`agent-plugins`を入れて止めています。この探索元が読んでいたのはその1件だけです。Claude Code側の実体はそのまま残ります。
 
 プラグインはompの拡張として、メインエージェントの各ターンに「複数ファイルの変更・設計判断・原因不明のバグでは`poteto-mode`を読む」という指示を足します。この自動の振り分けを止めるときは、`~/.omp/pstack-models.md`に`session hook: off`の1行を書いてompを起動し直します。ロールごとのモデルはompの`modelRoles`と`task.agentModelOverrides`で決めます（「ompへの移行」を参照）。
+
+`tdd`と`teach`は、pstackと手元の`~/.agents/skills`の両方にあります。ompでは素の名前（`/skill:tdd`）がpstack側、`agents/tdd`・`agents/teach`が手元側を指します。pstackの手順書は自分のスキルをプラグインのパスで読むので、どちらの名前でも動作は変わりません。`skills.customDirectories`に`~/.agents/skills`を足しても優先順は変わらず、`skills.ignoredSkills`は両方を消すため、この2つは名前空間付きで呼び分けます。
