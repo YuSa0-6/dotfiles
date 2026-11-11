@@ -14,6 +14,9 @@
     "git:github.com/jonjonrankin/pi-caveman",
     "npm:pi-web-access"
   ],
+  "skills": [
+    "~/.pi/agent/pstack/skills"
+  ],
   "showCacheMissNotices": true,
   "collapseChangelog": true,
   "tuiMode": "regular",
