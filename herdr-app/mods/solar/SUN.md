@@ -14,11 +14,21 @@
 
    「空き 0」なら作らない。「軌道がいっぱいです。Projectを1つ閉じるか、並列の数を増やすと頼めます」と1行だけ返して終わる。
 2. 依頼からProject名を決める。英小文字・数字・ハイフンだけ、12字以内。`sun` は使わない。
-3. `mkdir -p "$PWD/<名前>"` でフォルダを作る。同じ名前のフォルダが既にあれば、`<名前>-2` のように数字を付けた名前にする。
+3. Projectのフォルダを決める。
+   - 依頼が、手元にある既存のリポジトリでの作業なら、そのリポジトリの名前（`dotfiles` や `owner/repo`）で次を実行する。ghq が clone した本体のフォルダが出る。
+
+     ```
+     "$HOME/.config/herdr-app/mods/solar/repo.sh" <リポジトリの名前>
+     ```
+
+     - パスが1行出たら、それを `<フォルダ>` にする。`mkdir` はしない。出たパスを、次のコマンドにそのまま書き写す。
+     - 「なし」なら、下の「それ以外」に進む。
+     - ほかの1行（別の惑星が使っている、など）が出たら作らない。その1行をそのまま返して終わる。
+   - それ以外は、`mkdir -p "$PWD/<名前>"` でフォルダを作り、`$PWD/<名前>` を `<フォルダ>` にする。同じ名前のフォルダが既にあれば、`<名前>-2` のように数字を付けた名前にする。
 4. 次のコマンドを実行する。
 
    ```
-   herdr-app do space.new --name <名前> --folder "$PWD/<名前>" --argv "[\"claude\",\"--append-system-prompt-file\",\"$HOME/.config/herdr-app/mods/solar/PLANET.md\"]" --task '/pstack:poteto-mode <依頼の文>'
+   herdr-app do space.new --name <名前> --folder "<フォルダ>" --argv "[\"claude\",\"--append-system-prompt-file\",\"$HOME/.config/herdr-app/mods/solar/PLANET.md\"]" --task '/pstack:poteto-mode <依頼の文>'
    ```
 
    - `--argv` は、惑星のAgentに役目の文書（`PLANET.md`）を読ませる指定。上のとおり二重引用符で囲み、`$HOME` をシェルに展開させる。
@@ -28,7 +38,7 @@
    依頼の文が「piで」「Piを使って」のように Pi を指定していたら、次の形に替える。Pi では同じ進め方を `/skill:poteto-mode` で呼ぶ。
 
    ```
-   herdr-app do space.new --name <名前> --folder "$PWD/<名前>" --argv "[\"pi\",\"--append-system-prompt\",\"$HOME/.config/herdr-app/mods/solar/PLANET.md\"]" --task '/skill:poteto-mode <依頼の文>'
+   herdr-app do space.new --name <名前> --folder "<フォルダ>" --argv "[\"pi\",\"--append-system-prompt\",\"$HOME/.config/herdr-app/mods/solar/PLANET.md\"]" --task '/skill:poteto-mode <依頼の文>'
    ```
 
 5. 「<名前> を軌道に出しました」と1行だけ返して終わる。
@@ -36,7 +46,7 @@
 決まり：
 
 - 依頼の中身には手を付けない。調査・設計・実装・質問への回答をしない。
-- 太陽は、Projectを作る以外のことをしない。上の3つのコマンド以外は実行しない。
+- 太陽は、Projectを作る以外のことをしない。上の4つのコマンド以外は実行しない。
 - 依頼があいまいでも聞き返さない。名前だけ決めて渡す。細部は惑星のAgentが決める。
 - 1つの依頼で作るProjectは1つ。分けたほうがよさそうでも分けない。
 - `space.new` が失敗したら、エラーの1行をそのまま返して止まる。

@@ -260,7 +260,7 @@ Herdrは、人が見た時点で done を idle に変える。だから「確認
 - modは、スペースの名前が `sun` のものを太陽として惑星から外す。ピン留め（`agents()` の `pinned`）は使わない。ピン留めは普段も使う機能で、太陽以外をピン留めするとそのProjectが惑星から消えるため。
 - 太陽がProjectを作る手順（太陽のAgentへの指示文に書く内容）：
   1. 依頼からProject名を決める。
-  2. ローカルにフォルダを作る。
+  2. フォルダを決める。依頼が既存のリポジトリでの作業なら、`repo.sh <リポジトリの名前>` が出す ghq の本体のフォルダを使う。それ以外は、ローカルにフォルダを作る。
   3. `herdr-app do space.new --name <名前> --folder <フォルダ> --argv <惑星のAgent> --task "<最初の一言>"` を実行する。惑星のAgentには `PLANET.md` を読ませ、最初の一言は `/pstack:poteto-mode <依頼の文>` にする（正確な形は `SUN.md`）。
   4. それ以上は何もしない。
 - 最初は太陽だけがいて、そこから惑星を作る。そのため、Solar を開いたときに `sun` のスペースがなければ、自動で太陽を起こす。
@@ -271,7 +271,7 @@ Herdrは、人が見た時点で done を idle に変える。だから「確認
 - 太陽の起動（「太陽を起こす」が行うこと）：`~/workspace/solar` を作り、そこを `folder` にして `space.new` を呼ぶ。`argv` は次のとおり。
 
   ```
-  claude --model fable --append-system-prompt-file ~/.config/herdr-app/mods/solar/SUN.md --allowedTools "Bash(mkdir *)" "Bash(herdr-app do space.new *)" "Bash(*/herdr-app/mods/solar/orbit.sh)"
+  claude --model fable --append-system-prompt-file ~/.config/herdr-app/mods/solar/SUN.md --allowedTools "Bash(mkdir *)" "Bash(herdr-app do space.new *)" "Bash(*/herdr-app/mods/solar/orbit.sh)" "Bash(*/herdr-app/mods/solar/repo.sh *)"
   ```
 
 - 太陽は親のAgentだが、役目は「Projectを1つ作って渡す」まで。依頼を分けたり、惑星を見守ったりはしない（太陽自体が「待っている相手」になり、見るものが増えるため）。
@@ -280,7 +280,11 @@ Herdrは、人が見た時点で done を idle に変える。だから「確認
 - Pi 用の pstack は、dotfiles の `pi/pstack/generate.mjs` が `~/.pi/agent/pstack` に作る写し。公式が Claude Code 向けに行っているのと同じ方式で、スキルの本文は変えず、冒頭の「対応表を先に読め」の1文と対応表（`pi/pstack/pi.md`）だけを Pi 向けに差し替える。Pi の設定（`pi/agent/settings.json` の `skills`）に登録してあり、どの Pi でも既定で使える。手元のスキルと同名のもの（`tdd`、`teach`）は `pstack-` を付けて、手元を優先する。pstack を更新したら `node pi/pstack/generate.mjs` を実行し直す。
 - `SUN.md` を直したら、太陽を起動し直す。指示文は起動時に読み込まれるため。
 - 太陽への指示文は `mods/solar/SUN.md` に置く。`CLAUDE.md` にはしない（`~/workspace/solar` に置くと、その下に作る各Projectにも読み込まれてしまうため）。
-- 新しいProjectのフォルダは `~/workspace/solar/<名前>` に作られる。
+- 新しいProjectのフォルダは `~/workspace/solar/<名前>` に作られる。既存のリポジトリでの作業は、ghq が clone した本体（`ghq list -p` に出る `github.com/<owner>/<repo>`）をそのままフォルダにする。未コミットの変更が見え、同じリポジトリを別の場所に重ねて持たずに済むため。
+- 本体のフォルダは `~/.config/herdr-app/mods/solar/repo.sh <リポジトリの名前>` で引く。本体があればパスを1行出す（終了コード 0）。なければ「なし」（1）。出せないときは理由を1行出す（2）。
+  - `ghq list -e` は、同じ名前の worktree も返す。`repo.sh` は `.git` がフォルダのもの（本体）だけを残す。
+  - 本体1つにつき惑星は1つ。同じ作業ツリーを2体のAgentが同時に書き換えないよう、そのフォルダのスペースが既にあれば（`herdr-app ls`）出さない。同じリポジトリで並行して進めたいときは、人が worktree を作ってそこを惑星にする。
+  - 太陽は、出たパスを `--folder` にそのまま書き写す。`$(…)` で埋め込む形は、許したコマンドの形（`herdr-app do space.new *`）に合うか確かめていない。
 
 確かめたこと：
 
@@ -307,7 +311,7 @@ Herdrは、人が見た時点で done を idle に変える。だから「確認
 
 使うHerdrの関数：`spaces()`、`agents()`、`machines()`、`run()`、`hc()`、`exec()`、`home()`、`appHome()`、`notify()`、`shared()`／`setShared()`、`props()`。入力欄は `gpui-base` の `TextareaState` と `Textarea`。
 
-`mods/solar/orbit.sh`：空いている軌道の数を出すスクリプト（Agent が使う）。`mods/solar/SUN.md`：太陽への指示文。`mods/solar/PLANET.md`：惑星のAgentへの指示文。
+`mods/solar/orbit.sh`：空いている軌道の数を出すスクリプト（Agent が使う）。`mods/solar/repo.sh`：リポジトリの名前から ghq の本体のフォルダを出すスクリプト（Agent が使う）。`mods/solar/SUN.md`：太陽への指示文。`mods/solar/PLANET.md`：惑星のAgentへの指示文。
 
 共有する値（`shared`）：`solar.known`（閉じたProjectの記録用に控える、スペースの名前とフォルダ）、`solar.slots`（枠の割り当て）、`solar.freed`（空いた順）、`solar.view`（詳細の列に出すもの。`{ kind: "home" }`、`{ kind: "project", space }`、`{ kind: "sun" }`、`{ kind: "moon" }`）、`solar.limit`、`solar.still`、`solar.closed`（閉じたProjectの数）、`solar.closing`（列から閉じたばかりのスペース）。
 

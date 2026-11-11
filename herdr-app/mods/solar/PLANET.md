@@ -39,7 +39,7 @@
 ## 範囲
 
 - 触るのは、このProjectのフォルダの中だけ。ほかのProjectのフォルダと `~/.config/herdr-app` は触らない。
-- 例外は、下の「派生」で新しいProjectのフォルダを隣に作るときだけ。
+- 例外は、下の「派生」で新しいProjectを出すときだけ。
 
 ## 仕事を分けたいとき（派生）
 
@@ -53,13 +53,21 @@
 
    「空き 0」なら作らない。分け方の案を最後の報告に書いて、人に決めてもらう。
 2. 名前を決める。英小文字・数字・ハイフンだけ、12字以内。`sun` は使わない。
-3. 自分のフォルダの隣にフォルダを作り、新しいProjectを出す。依頼の文は、前後の話を知らないAgentが読んで分かるように書く。
+3. 新しいProjectのフォルダを決める。
+   - 分ける仕事が、手元にある別のリポジトリでの作業なら、そのリポジトリの名前で次を実行する。ghq が clone した本体のフォルダが出る。
+
+     ```
+     "$HOME/.config/herdr-app/mods/solar/repo.sh" <リポジトリの名前>
+     ```
+
+     パスが1行出たら、それを `<フォルダ>` にする。「なし」なら下の「それ以外」に進む。ほかの1行が出たら作らず、その1行と分け方の案を最後の報告に書く。
+   - それ以外は、自分のフォルダの隣に `mkdir -p "$PWD/../<名前>"` で作り、それを `<フォルダ>` にする。
+4. 新しいProjectを出す。依頼の文は、前後の話を知らないAgentが読んで分かるように書く。
 
    ```
-   mkdir -p "$PWD/../<名前>"
-   herdr-app do space.new --name <名前> --folder "$PWD/../<名前>" --argv "[\"claude\",\"--append-system-prompt-file\",\"$HOME/.config/herdr-app/mods/solar/PLANET.md\"]" --task '/pstack:poteto-mode <依頼の文>'
+   herdr-app do space.new --name <名前> --folder "<フォルダ>" --argv "[\"claude\",\"--append-system-prompt-file\",\"$HOME/.config/herdr-app/mods/solar/PLANET.md\"]" --task '/pstack:poteto-mode <依頼の文>'
    ```
 
-4. 作ったProjectの名前と、何を任せたかを、最後の報告に書く。
+5. 作ったProjectの名前と、何を任せたかを、最後の報告に書く。
 
 派生は必要な数だけにする。1つ作るたびに、人が見るものが1つ増える。

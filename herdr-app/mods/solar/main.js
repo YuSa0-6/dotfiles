@@ -39,7 +39,7 @@ const SUN_ASKS = "#F4F1E6";
 // 太陽が新しいProjectのフォルダを作る場所（ホームからの相対）。太陽はここで起動する。
 const PROJECTS = "workspace/solar";
 // 太陽に許すコマンド。これ以外を実行しようとすると、太陽は止まって聞いてくる。
-const SUN_TOOLS = ["Bash(mkdir *)", "Bash(herdr-app do space.new *)", "Bash(*/herdr-app/mods/solar/orbit.sh)"];
+const SUN_TOOLS = ["Bash(mkdir *)", "Bash(herdr-app do space.new *)", "Bash(*/herdr-app/mods/solar/orbit.sh)", "Bash(*/herdr-app/mods/solar/repo.sh *)"];
 const PLANETS = ["mercury", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune"];
 const PROVIDERS = {
     "claude-code": { name: "Claude", color: "#D97757" },
