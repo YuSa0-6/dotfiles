@@ -464,7 +464,36 @@ describe("詳細の列：太陽", () => {
     host.shared["solar.view"] = { kind: "sun" };
     const root = mount({ role: "detail" }).view.render();
     expect(texts(root)).toContain("太陽がまだいません");
-    expect(ids(root)).toContain("wake");
+    expect(ids(root).filter((id) => id.startsWith("wake-"))).toEqual(["wake-claude-code", "wake-pi", "wake-omp"]);
+  });
+
+  test("選んだAgentで太陽を起こし、次に自動で起こすときのために覚える", async () => {
+    host.shared["solar.view"] = { kind: "sun" };
+    const woke = async (id: string) => {
+      host.ran = [];
+      find(mount({ role: "detail" }).view.render(), id).handlers.on_click({}, {});
+      await new Promise((done) => setTimeout(done, 0));
+      return host.ran.find(([name]) => name === "space.new")![1].argv as string[];
+    };
+    const role = "/home/u/.config/herdr-app/mods/solar/SUN.md";
+    expect((await woke("wake-pi")).slice(0, 3)).toEqual(["pi", "--append-system-prompt", role]);
+    expect(host.shared["solar.sun"]).toBe("pi");
+    expect((await woke("wake-omp")).slice(0, 3)).toEqual(["omp", "--append-system-prompt", role]);
+    expect(host.shared["solar.sun"]).toBe("omp");
+    const claude = await woke("wake-claude-code");
+    expect(claude.slice(0, 5)).toEqual(["claude", "--model", "fable", "--append-system-prompt-file", role]);
+    expect(claude).toContain("--allowedTools");
+  });
+
+  test("Pi と omp の太陽は、使える道具を bash だけにする", async () => {
+    host.shared["solar.view"] = { kind: "sun" };
+    for (const id of ["wake-pi", "wake-omp"]) {
+      host.ran = [];
+      find(mount({ role: "detail" }).view.render(), id).handlers.on_click({}, {});
+      await new Promise((done) => setTimeout(done, 0));
+      const argv = host.ran.find(([name]) => name === "space.new")![1].argv as string[];
+      expect(argv.slice(argv.indexOf("--tools"))).toEqual(["--tools", "bash"]);
+    }
   });
 
   test("太陽のスペースにAgentがいなければ、止まっていると伝える", () => {
@@ -497,6 +526,15 @@ describe("太陽に頼む", () => {
     await press("idle");
     expect(host.sent).toEqual([["keys", "t9", "/", "c", "l", "e", "a", "r", "enter"]]);
     expect(opened()).toEqual(["t9"]);
+  });
+
+  test("Pi の太陽には /new を送る（Pi に /clear はない）", async () => {
+    host.spaces = [space("s", "sun", "idle")];
+    host.agents = [agent("s", "t9", "idle", "pi")];
+    find(orrery({}).view.render(), "sun-hit").handlers.on_click();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(host.sent).toEqual([["keys", "t9", "/", "n", "e", "w", "enter"]]);
   });
 
   test("作業中・質問中の太陽は、消さずにそのまま開く", async () => {
@@ -562,6 +600,14 @@ describe("太陽を自動で起こす", () => {
     expect(woke()).toHaveLength(1);
     expect(woke()[0][1].name).toBe("sun");
     expect(woke()[0][1].folder).toBe("/home/u/workspace/solar");
+    expect(woke()[0][1].argv[0]).toBe("claude");
+  });
+
+  test("前に選んだAgentがあれば、自動でもそのAgentで起こす", async () => {
+    host.shared["solar.sun"] = "omp";
+    const mounted = mount({});
+    await seconds(mounted, 6);
+    expect(woke()[0][1].argv[0]).toBe("omp");
   });
 
   test("太陽がすでにいれば起こさない。あとで閉じても戻さない", async () => {

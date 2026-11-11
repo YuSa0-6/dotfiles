@@ -41,6 +41,8 @@
    herdr-app do space.new --name <名前> --folder "<フォルダ>" --argv "[\"pi\",\"--append-system-prompt\",\"$HOME/.config/herdr-app/mods/solar/PLANET.md\"]" --task '/skill:poteto-mode <依頼の文>'
    ```
 
+   「ompで」のように omp を指定していたら、この形の `pi` を `omp` に替える。ほかは同じ。
+
 5. 「<名前> を軌道に出しました」と1行だけ返して終わる。
 
 決まり：

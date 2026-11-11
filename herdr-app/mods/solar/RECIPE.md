@@ -175,7 +175,7 @@ blocked のProjectを出しているあいだ、列の枠線を黄色 2px にす
 ### 太陽に頼む（太陽を押したとき）
 
 - 太陽を押すと、太陽のターミナルを重ねて開く（「ターミナルを開いたとき」と同じ帯つき）。そこで頼みたいことを書く。入力欄は作らない。ターミナルなら、音声入力や `@ファイル`、`/skill` がそのまま使えるため。
-- 開く前に、手が空いている太陽（idle・done）には `/clear` を入力する。前の依頼のやり取りを消し、読むものを減らす。太陽の役目は起動時の `SUN.md` にあるので消えない。作業中・質問中の太陽には入力せず、そのまま開く。
+- 開く前に、手が空いている太陽（idle・done）には `/clear` を入力する（Pi の太陽には `/new`。Pi に `/clear` はない）。前の依頼のやり取りを消し、読むものを減らす。太陽の役目は起動時の `SUN.md` にあるので消えない。作業中・質問中の太陽には入力せず、そのまま開く。
 - `/clear` は `hc(["keys", 太陽のaddress, "/", "c", "l", "e", "a", "r", "enter"])` でキーを1つずつ押して入力する。`hc send` は送り主の印（`<hc from=…>`）で文を包むので、コマンドとして働かない。
 - 軌道がいっぱいかどうかは、太陽が `orbit.sh` で自分で確かめて返す。
 - 太陽がいないとき・止まっているときは、右の列に太陽の画面（下）を出す。
@@ -183,7 +183,7 @@ blocked のProjectを出しているあいだ、列の枠線を黄色 2px にす
 ### 詳細の列：太陽
 
 - 太陽がいるとき：「太陽に頼む」と「ターミナルを開く」ボタン（押したときの動きは上と同じ）。
-- `sun` のスペースがないとき：「太陽がまだいません」と「太陽を起こす」ボタン。押すと太陽を起動する（下の「太陽について」）。
+- `sun` のスペースがないとき：「太陽がまだいません」と、起こすボタンを Agent ごとに1つ（「Claude で起こす」「Pi で起こす」「omp で起こす」）。押すと、そのAgentで太陽を起動する（下の「太陽について」）。前に選んだAgentのボタンを目立たせる。
 - `sun` のスペースはあるがAgentがいないとき：「太陽が止まっています」「sun のスペースで claude を起動し直してください」。
 - 太陽が blocked のとき：「太陽が質問しています」と「ターミナルを開く」。
 - 太陽自身の状態も見せる：Agentがいなければ太陽を不透明度 0.6 にする。working なら太陽のまわりで弧が回る。blocked なら白っぽい太い輪（`#F4F1E6`、4px）と「！」の印。
@@ -268,15 +268,24 @@ Herdrは、人が見た時点で done を idle に変える。だから「確認
   - 起こすのは、開いてから1回だけ。太陽系のブロックだけが行う。途中で太陽を閉じたときは戻さない（次に Solar を開いたとき、または「太陽を起こす」で戻る）。
   - 見本（`demo`）では起こさない。
 - 惑星1つは、フォルダを持つProject 1つ（＝スペース1つ）。Agent 1体ではない。太陽を通さずに作ったスペースも惑星として並ぶ。
-- 太陽の起動（「太陽を起こす」が行うこと）：`~/workspace/solar` を作り、そこを `folder` にして `space.new` を呼ぶ。`argv` は次のとおり。
+- 太陽にするAgentは、Claude Code・Pi・omp から選べる。選んだものを共有の値 `solar.sun`（`claude-code`・`pi`・`omp`）に覚え、自動で起こすときもそれを使う。覚えていなければ Claude Code。
+- 太陽を別のAgentに替えるときは、`sun` のスペースを閉じてから起こし直す。`sun` のターミナルの中でAgentを打ち直すと、役目の文書なしで起動してしまう。
+- 太陽の起動（起こすボタンが行うこと）：`~/workspace/solar` を作り、そこを `folder` にして `space.new` を呼ぶ。Claude Code の `argv` は次のとおり。
 
   ```
   claude --model fable --append-system-prompt-file ~/.config/herdr-app/mods/solar/SUN.md --allowedTools "Bash(mkdir *)" "Bash(herdr-app do space.new *)" "Bash(*/herdr-app/mods/solar/orbit.sh)" "Bash(*/herdr-app/mods/solar/repo.sh *)"
   ```
 
+  Pi と omp は次のとおり。どちらにも、コマンドの形で絞る仕組み（`--allowedTools`）がない。代わりに、使える道具を bash だけにする。bash の中身は絞れないので、何を実行してよいかは `SUN.md` の決まりだけが頼りになる。
+
+  ```
+  pi --append-system-prompt ~/.config/herdr-app/mods/solar/SUN.md --tools bash
+  omp --append-system-prompt ~/.config/herdr-app/mods/solar/SUN.md --tools bash
+  ```
+
 - 太陽は親のAgentだが、役目は「Projectを1つ作って渡す」まで。依頼を分けたり、惑星を見守ったりはしない（太陽自体が「待っている相手」になり、見るものが増えるため）。
 - 惑星のAgentへの指示文は `mods/solar/PLANET.md` に置く。人は惑星の見た目（回る・黄色の輪・緑の輪）しか見ていない、という前提で、やり切ること・質問を絞ること・終わりの報告の形・触る範囲を決めている。Claude Code には `--append-system-prompt-file`、Pi には `--append-system-prompt` で読ませる。
-- 惑星のAgentは pstack（poteto 氏の技能集）の `/pstack:poteto-mode` で動かす。確かめるところまで自分で進むので、人が見守る量が減る。この技能はAgentが自分からは呼べない設定なので、最初の一言の先頭に付けて渡す。Pi では `/skill:poteto-mode <依頼の文>` にする。
+- 惑星のAgentは pstack（poteto 氏の技能集）の `/pstack:poteto-mode` で動かす。確かめるところまで自分で進むので、人が見守る量が減る。この技能はAgentが自分からは呼べない設定なので、最初の一言の先頭に付けて渡す。Pi と omp では `/skill:poteto-mode <依頼の文>` にする。
 - Pi 用の pstack は、dotfiles の `pi/pstack/generate.mjs` が `~/.pi/agent/pstack` に作る写し。公式が Claude Code 向けに行っているのと同じ方式で、スキルの本文は変えず、冒頭の「対応表を先に読め」の1文と対応表（`pi/pstack/pi.md`）だけを Pi 向けに差し替える。Pi の設定（`pi/agent/settings.json` の `skills`）に登録してあり、どの Pi でも既定で使える。手元のスキルと同名のもの（`tdd`、`teach`）は `pstack-` を付けて、手元を優先する。pstack を更新したら `node pi/pstack/generate.mjs` を実行し直す。
 - `SUN.md` を直したら、太陽を起動し直す。指示文は起動時に読み込まれるため。
 - 太陽への指示文は `mods/solar/SUN.md` に置く。`CLAUDE.md` にはしない（`~/workspace/solar` に置くと、その下に作る各Projectにも読み込まれてしまうため）。

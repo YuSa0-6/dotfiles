@@ -89,6 +89,16 @@ const PROJECTS = "workspace/solar";
 // 太陽に許すコマンド。これ以外を実行しようとすると、太陽は止まって聞いてくる。
 const SUN_TOOLS = ["Bash(mkdir *)", "Bash(herdr-app do space.new *)", "Bash(*/herdr-app/mods/solar/orbit.sh)", "Bash(*/herdr-app/mods/solar/repo.sh *)"];
 const PLANETS = ["mercury", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune"];
+// 太陽にできるAgent。app は Herdr が報告するプログラムの名前。先頭が、選んでいないときの既定。
+// fresh は、前の依頼のやり取りを消すコマンド。argv は、役目の文書（SUN.md）のパスから起動の引数を作る。
+interface Sun { app: string; name: string; fresh: string; argv: (role: string) => string[] }
+// Pi と omp には、コマンドの形で絞る仕組み（Claude Code の --allowedTools）がない。代わりに、使える道具を bash だけにする。
+const SUNS: Sun[] = [
+  { app: "claude-code", name: "Claude", fresh: "/clear", argv: (role) => ["claude", "--model", "fable", "--append-system-prompt-file", role, "--allowedTools", ...SUN_TOOLS] },
+  { app: "pi", name: "Pi", fresh: "/new", argv: (role) => ["pi", "--append-system-prompt", role, "--tools", "bash"] },
+  { app: "omp", name: "omp", fresh: "/clear", argv: (role) => ["omp", "--append-system-prompt", role, "--tools", "bash"] },
+];
+const sunFor = (app: unknown): Sun => SUNS.find((s) => s.app === app) ?? SUNS[0];
 const PROVIDERS: Record<string, { name: string; color: Hex }> = {
   "claude-code": { name: "Claude", color: "#D97757" },
   codex: { name: "Codex", color: "#7CC4F5" },
@@ -589,12 +599,11 @@ export default class Solar extends View {
     const note = (text: string): NativeElement => div().text_size(14).text_color(TEXT_DIM).child(text);
     const sun = this.sun();
     if (!sun.space) {
-      return [label, title("太陽がまだいません"), note("起こすと、Claude Code（Fable）が依頼を待ちます"),
-        button("wake", "太陽を起こす", TEXT, BG, 56, () => this.wake()), back("やめる")];
+      return [label, title("太陽がまだいません"), note("起こすAgentを選ぶと、そのAgentが依頼を待ちます"), ...this.wakers(), back("やめる")];
     }
     const agent = sun.agent;
     if (!agent) {
-      return [label, title("太陽が止まっています"), note("sun のスペースで claude を起動し直してください"), back("ホームに戻る")];
+      return [label, title("太陽が止まっています"), note("sun のスペースを閉じると、ここから起こし直せます"), back("ホームに戻る")];
     }
     if (agent.status === "blocked") {
       // 質問には文章で答えられないので、ターミナルを開いて本人が答える。
@@ -618,18 +627,30 @@ export default class Solar extends View {
     const open = (): void => openTerminal(agent.address);
     if (agent.status === "working" || agent.status === "blocked") open();
     // hc send は送り主の印で文を包むので、コマンドとして働かない。キーを1つずつ押して入力する。
-    else hc(["keys", agent.address, ..."/clear".split(""), "enter"]).then(open, open);
+    else hc(["keys", agent.address, ...sunFor(agent.app).fresh.split(""), "enter"]).then(open, open);
   }
 
-  // 太陽を起こす。sun という名前のスペースを作り、Claude Code（Fable）を役目の文書つきで起動する。
-  wake(): void {
+  // 太陽を起こすボタン。Agent 1つにつき1つ。前に選んだAgentを目立たせる。
+  wakers(): NativeElement[] {
+    const last = sunFor(shared("solar.sun"));
+    return SUNS.map((sun) => {
+      const on = sun === last;
+      return button(`wake-${sun.app}`, `${sun.name} で起こす`, on ? TEXT : CROSS, on ? BG : TEXT_DIM, on ? 56 : 44, () => this.wake(sun.app));
+    });
+  }
+
+  // 太陽を起こす。sun という名前のスペースを作り、選んだAgentを役目の文書つきで起動する。
+  // app を渡さないとき（自動で起こすとき）は、前に選んだAgentにする。
+  wake(app?: string): void {
     if (this.demo()) return;
+    if (app) setShared("solar.sun", app);
+    const sun = sunFor(app ?? shared("solar.sun"));
     const folder = `${home()}/${PROJECTS}`;
     exec("mkdir", ["-p", folder])
       .then(() => run("space.new", {
         name: SUN_NAME,
         folder,
-        argv: ["claude", "--model", "fable", "--append-system-prompt-file", `${appHome()}/${ART}/SUN.md`, "--allowedTools", ...SUN_TOOLS],
+        argv: sun.argv(`${appHome()}/${ART}/SUN.md`),
       }))
       .catch((e) => notify({ title: "太陽を起こせませんでした", body: String(e).slice(0, 80), level: "error" }));
   }
