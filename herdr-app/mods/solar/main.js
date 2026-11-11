@@ -182,32 +182,42 @@ export default class Solar extends View {
         if (!this.demo())
             this.persist();
         cx.timer.every(1000, (cx) => {
-            if (!this.demo())
+            if (!this.demo()) {
                 this.persist();
-            if (!this.demo())
                 this.dawn();
+            }
             // 輪郭を消す時刻が来たときと、輪の動きを進めるときだけ描き直す。
             const now = Date.now();
-            let dirty = this.ghosts.some((g) => g.until <= now);
-            const flip = Number(props()?.flip ?? 0);
-            if (this.demo() && flip > 0 && !this.flipped && ++this.age >= flip) {
-                this.flipped = true;
-                dirty = true;
-            }
-            for (const [id, ripple] of Object.entries(this.ripples)) {
-                if (!ripple.grown) {
-                    ripple.grown = true;
-                    ripple.until = now + RIPPLE.duration;
-                    dirty = true;
-                }
-                else if (now > ripple.until) {
-                    delete this.ripples[id];
-                    dirty = true;
-                }
-            }
-            if (dirty)
+            const faded = this.ghosts.some((g) => g.until <= now);
+            const flipped = this.flip();
+            const spread = this.spread(now);
+            if (faded || flipped || spread)
                 cx.notify();
         });
+    }
+    // 見本で、props の flip（秒）がたったら「進めた」の惑星を idle に変える。変えたときだけ true。
+    flip() {
+        const after = Number(props()?.flip ?? 0);
+        if (!this.demo() || !(after > 0) || this.flipped || ++this.age < after)
+            return false;
+        this.flipped = true;
+        return true;
+    }
+    // 緑の輪が広がって消える動きを1段進める。描き直しが要るときだけ true。
+    spread(now) {
+        let dirty = false;
+        for (const [id, ripple] of Object.entries(this.ripples)) {
+            if (!ripple.grown) {
+                ripple.grown = true;
+                ripple.until = now + RIPPLE.duration;
+                dirty = true;
+            }
+            else if (now > ripple.until) {
+                delete this.ripples[id];
+                dirty = true;
+            }
+        }
+        return dirty;
     }
     role() {
         return props()?.role ?? "solar";
@@ -281,9 +291,18 @@ export default class Solar extends View {
         // そこで枠を空けると惑星が入れ替わるので、続けて見えないときだけ空ける。
         const bodies = this.bodies();
         const ids = bodies.map((s) => s.id);
-        const alive = new Set(ids);
         const saved = (shared("solar.slots") ?? {});
-        // 閉じたあとでは名前とフォルダを読めないので、見えているうちに控えておく。
+        const known = this.remember(bodies, saved);
+        const held = this.held(new Set(ids), saved);
+        const r = assign(saved, (shared("solar.freed") ?? []), [...ids, ...held], this.limit());
+        if (!r.changed)
+            return;
+        setShared("solar.slots", r.slots);
+        setShared("solar.freed", r.freed);
+        this.retire(Object.keys(saved).filter((id) => !(id in r.slots)), known);
+    }
+    // 閉じたあとでは名前とフォルダを読めないので、見えているうちに控えておく。
+    remember(bodies, saved) {
         const known = (shared("solar.known") ?? {});
         const next = {};
         for (const id of Object.keys(saved))
@@ -293,6 +312,10 @@ export default class Solar extends View {
             next[s.id] = { name: s.name, folder: s.folder ?? "" };
         if (JSON.stringify(next) !== JSON.stringify(known))
             setShared("solar.known", next);
+        return next;
+    }
+    // 一覧から消えたが、まだ枠を空けずに持っておくスペース。
+    held(alive, saved) {
         const missing = {};
         for (const id of Object.keys(saved)) {
             if (!alive.has(id))
@@ -304,19 +327,15 @@ export default class Solar extends View {
         const fresh = Object.entries(closing).filter(([id, at]) => alive.has(id) && Date.now() - at < CLOSING);
         if (fresh.length !== Object.keys(closing).length)
             setShared("solar.closing", Object.fromEntries(fresh));
-        const held = Object.keys(missing).filter((id) => missing[id] < RELEASE_AFTER && !(id in closing));
-        const r = assign(saved, (shared("solar.freed") ?? []), [...ids, ...held], this.limit());
-        if (!r.changed)
-            return;
-        setShared("solar.slots", r.slots);
-        setShared("solar.freed", r.freed);
-        // 枠が空いた数だけ「閉じたProject」を増やす。Herdr本体で閉じたスペースも数える。
-        const released = Object.keys(saved).filter((id) => !(id in r.slots));
+        return Object.keys(missing).filter((id) => missing[id] < RELEASE_AFTER && !(id in closing));
+    }
+    // 枠が空いた数だけ「閉じたProject」を増やし、記録に残す。Herdr本体で閉じたスペースも数える。
+    retire(released, known) {
         if (released.length === 0)
             return;
         setShared("solar.closed", Number(shared("solar.closed") ?? 0) + released.length);
-        record(released.map((id) => next[id] ?? { name: id, folder: "" }));
-        setShared("solar.known", Object.fromEntries(Object.entries(next).filter(([id]) => !released.includes(id))));
+        record(released.map((id) => known[id] ?? { name: id, folder: "" }));
+        setShared("solar.known", Object.fromEntries(Object.entries(known).filter(([id]) => !released.includes(id))));
     }
     // 開いたときに太陽がいなければ、自動で起こす。最初は太陽だけがいて、そこから惑星を作る流れにするため。
     dawn() {
@@ -451,12 +470,20 @@ export default class Solar extends View {
             glide(disc(x, y, 44), "moon-hit").cursor_pointer().on_click(() => setShared("solar.view", { kind: "moon" })),
         ];
     }
+    // 列に出す画面。レイアウトの props に view（スペースのid、または sun）があれば、その画面に固定する。見た目の確認用。
+    panel() {
+        const pinned = props()?.view;
+        if (!pinned)
+            return (shared("solar.view") ?? { kind: "home" });
+        if (pinned === SUN_NAME)
+            return { kind: "sun" };
+        if (pinned === "moon")
+            return { kind: "moon" };
+        return { kind: "project", space: pinned };
+    }
     detail() {
         const shown = this.shown();
-        // レイアウトの props に view（スペースのid、または sun）があれば、その画面に固定する。見た目の確認用。
-        const pinned = props()?.view;
-        const fixed = pinned === SUN_NAME ? { kind: "sun" } : pinned === "moon" ? { kind: "moon" } : { kind: "project", space: pinned };
-        const panel = (pinned ? fixed : shared("solar.view") ?? { kind: "home" });
+        const panel = this.panel();
         const space = panel.kind === "project" ? shown.find((s) => s.id === panel.space) : undefined;
         // 別の画面に移ったら、「閉じる」の1回目は取り消す。
         if (this.arming !== space?.id)
@@ -793,19 +820,8 @@ function planet(parts, space, slot, crew, p, d, above, still, peek) {
     mark(h_flex().absolute().left(p.x + 0.4 * d - 0.4 * badge).top(p.y - 0.4 * d - 0.4 * badge).size(0.8 * badge)
         .rounded(0.28 * badge).bg(BADGE).items_center().justify_center()
         .text_size(0.55 * badge).font_bold().text_color(TEXT).child("?"), status === "unknown", "badge-unknown");
-    const size = Math.max(10, 0.22 * d);
-    for (let i = 0; i < crew.length; i++) {
-        const a = rad(SATELLITE_START + (360 / crew.length) * i);
-        parts.push(glide(satellite(disc(p.x + 0.75 * d * Math.cos(a), p.y + 0.75 * d * Math.sin(a), size), crew[i]), `${key}-agent-${i}`));
-    }
-    // 上用と下用の名前を両方動かしておき、見せるほうだけ不透明にする。
-    // 1つの名前を上下に移すと、切り替えが4秒かけて滑ってしまうため。
-    const tone = status === "blocked" ? BLOCKED_NAME : dim ? TEXT_DIM : TEXT;
-    const name = (top, visible, id) => glide(div().absolute().left(p.x - NAME_WIDTH / 2).top(top).w(NAME_WIDTH)
-        .text_center().truncate().text_size(14).font_bold().font_family(MONO)
-        .text_color(tone).opacity(visible ? 1 : 0).child(space.name), id);
-    parts.push(name(p.y - 0.75 * d - 6 - NAME_HEIGHT, above, `${key}-name-up`));
-    parts.push(name(p.y + 0.75 * d + 6, !above, `${key}-name-down`));
+    satellites(parts, crew, p, d, key);
+    names(parts, space.name, nameTone(status, dim), p, d, above, key);
     // 絵（image）は押しても反応しないので、押す範囲は透明な箱で上に重ねる。
     // 1回押すと詳細の列に出す。2回続けて押すと、列を経ずにターミナルも開く。
     // 3回目以降で開き直さないよう、ちょうど2回目だけで開く。
@@ -815,6 +831,28 @@ function planet(parts, space, slot, crew, p, d, above, still, peek) {
         if (event.click_count === 2)
             peek();
     }));
+}
+// 惑星のまわりに、Agent 1体につき1つの衛星を等間隔で置く。
+function satellites(parts, crew, p, d, key) {
+    const size = Math.max(10, 0.22 * d);
+    for (let i = 0; i < crew.length; i++) {
+        const a = rad(SATELLITE_START + (360 / crew.length) * i);
+        parts.push(glide(satellite(disc(p.x + 0.75 * d * Math.cos(a), p.y + 0.75 * d * Math.sin(a), size), crew[i]), `${key}-agent-${i}`));
+    }
+}
+function nameTone(status, dim) {
+    if (status === "blocked")
+        return BLOCKED_NAME;
+    return dim ? TEXT_DIM : TEXT;
+}
+// 上用と下用の名前を両方動かしておき、見せるほうだけ不透明にする。
+// 1つの名前を上下に移すと、切り替えが4秒かけて滑ってしまうため。
+function names(parts, text, tone, p, d, above, key) {
+    const name = (top, visible, id) => glide(div().absolute().left(p.x - NAME_WIDTH / 2).top(top).w(NAME_WIDTH)
+        .text_center().truncate().text_size(14).font_bold().font_family(MONO)
+        .text_color(tone).opacity(visible ? 1 : 0).child(text), id);
+    parts.push(name(p.y - 0.75 * d - 6 - NAME_HEIGHT, above, `${key}-name-up`));
+    parts.push(name(p.y + 0.75 * d + 6, !above, `${key}-name-down`));
 }
 // 急ぎの順に並べたAgent。先頭が、詳細の列でも2回押しでも最初に選ばれる。
 function byUrgency(crew) {
