@@ -105,9 +105,6 @@ export EDITOR='nvim'
 # Rust / Cargo
 export PATH="$HOME/.cargo/bin:$PATH"
 
-# ruby settings
-export PATH="$HOME/.rbenv/bin:$PATH"
-eval "$(rbenv init - zsh)"
 command -v direnv >/dev/null 2>&1 && eval "$(direnv hook zsh)"
 
 # Volta
@@ -123,7 +120,8 @@ source <(fzf --zsh)
 # ghq + fzf: Ctrl-G to jump to a ghq-managed repo
 function ghq-fzf() {
   local dir
-  dir=$(ghq list | fzf) && cd "$(ghq root)/$dir"
+  # worktree 置き場 (worktrees/ 等) や _archive/ も ghq list に出るため、<host>/ と local/ 配下の本体だけに絞る
+  dir=$(ghq list | grep -E '^([^/]+\.[^/]+|local)/' | fzf) && cd "$(ghq root)/$dir"
   zle reset-prompt
 }
 zle -N ghq-fzf
@@ -156,3 +154,9 @@ esac
 
 # マシン固有・社内向けの設定（リポジトリ管理外）
 [[ -r ~/.zshrc.local ]] && source ~/.zshrc.local
+
+# Vite+ bin (https://viteplus.dev)
+. "/Users/yuta.fukuda/.config/vite-plus/env"
+
+# bun completions
+[ -s "/Users/yuta.fukuda/.bun/_bun" ] && source "/Users/yuta.fukuda/.bun/_bun"
