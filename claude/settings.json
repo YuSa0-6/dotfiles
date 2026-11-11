@@ -1,12 +1,47 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet"
+  },
   "permissions": {
     "allow": [
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Read(~/workspace/**)",
+      "Edit(~/workspace/**)"
     ],
     "deny": [],
-    "ask": [],
-    "defaultMode": "auto"
+    "ask": [
+      "Bash(git push *)",
+      "Bash(rm -rf *)",
+      "Bash(git reset --hard *)"
+    ],
+    "defaultMode": "auto",
+    "additionalDirectories": [
+      "~/workspace"
+    ]
+  },
+  "skillOverrides": {
+    "base-ui": "off",
+    "codebase-design": "off",
+    "computer-use": "off",
+    "daisyui": "off",
+    "diagnosing-bugs": "off",
+    "herdr": "off",
+    "improve-codebase-architecture": "off",
+    "linear-tickets": "off",
+    "orca-emulator": "off",
+    "orca-emulator-android": "off",
+    "orca-linear": "off",
+    "orca-per-workspace-env": "off",
+    "resolving-merge-conflicts": "off",
+    "sentry-cli": "off",
+    "teach": "off",
+    "to-questionnaire": "off",
+    "triage": "off",
+    "wizard": "off",
+    "argument-gap-edit": "off",
+    "naming-parts-of-speech": "off",
+    "hono": "off"
   },
   "hooks": {
     "SessionStart": [
@@ -175,6 +210,7 @@
       }
     ]
   },
+  "worktree": {},
   "enableWorkflows": true,
   "statusLine": {
     "type": "command",
@@ -198,7 +234,8 @@
     "i-have-adhd@i-have-adhd": true,
     "security-tools@cc-sre-plugins": false,
     "medpeer-terraform@cc-sre-plugins": true,
-    "github@cc-sre-plugins": false
+    "github@cc-sre-plugins": false,
+    "pstack@cursor-plugins": true
   },
   "extraKnownMarketplaces": {
     "cloudflare": {
@@ -249,64 +286,49 @@
         "url": "git@github.com:medpeer-dev/cc-sre-plugins.git"
       },
       "autoUpdate": true
+    },
+    "cursor-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "cursor/plugins"
+      }
     }
   },
+  "outputStyle": "Readable",
   "language": "日本語",
+  "sandbox": {
+    "enabled": false,
+    "allowUnsandboxedCommands": false
+  },
   "effortLevel": "xhigh",
   "modelSettings": {
     "claude-fable-5-1": {
       "effortLevel": "high"
     },
     "claude-opus-5": {
-      "effortLevel": "high"
+      "effortLevel": "medium"
+    },
+    "claude-haiku-5-5": {
+      "autoCompactWindow": 100000
+    },
+    "claude-fable-5-2": {
+      "effortLevel": "low"
     }
   },
   "advisorModel": "fable",
-  "tui": "fullscreen",
-  "skipWorkflowUsageWarning": true,
-  "theme": "custom:catppuccin-latte",
-  "verbose": true,
-  "skipAutoPermissionPrompt": true,
-  "voiceEnabled": true,
-  "agentPushNotifEnabled": true,
   "askUserQuestionTimeout": "5m",
-  "autoContinueAtUsageLimit": true,
-  "editorMode": "normal",
-  "env": {
-    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet"
-  },
-  "model": "claude-fable-5-1[1m]",
-  "outputStyle": "Readable",
-  "remoteControlAtStartup": false,
-  "sandbox": {
-    "enabled": false
-  },
-  "skillOverrides": {
-    "base-ui": "off",
-    "codebase-design": "off",
-    "computer-use": "off",
-    "daisyui": "off",
-    "diagnosing-bugs": "off",
-    "herdr": "off",
-    "improve-codebase-architecture": "off",
-    "linear-tickets": "off",
-    "orca-emulator": "off",
-    "orca-emulator-android": "off",
-    "orca-linear": "off",
-    "orca-per-workspace-env": "off",
-    "resolving-merge-conflicts": "off",
-    "sentry-cli": "off",
-    "teach": "off",
-    "to-questionnaire": "off",
-    "triage": "off",
-    "wizard": "off",
-    "argument-gap-edit": "off",
-    "naming-parts-of-speech": "off",
-    "hono": "off"
-  },
+  "tui": "fullscreen",
   "voice": {
     "enabled": true,
     "mode": "hold"
   },
-  "worktree": {}
+  "skipWorkflowUsageWarning": true,
+  "theme": "custom:catppuccin-latte",
+  "editorMode": "normal",
+  "verbose": true,
+  "autoContinueAtUsageLimit": true,
+  "remoteControlAtStartup": false,
+  "agentPushNotifEnabled": true,
+  "skipAutoPermissionPrompt": true,
+  "voiceEnabled": true
 }
