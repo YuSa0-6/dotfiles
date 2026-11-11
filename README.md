@@ -5,7 +5,7 @@
 管理対象：
 
 - Claude Codeの設定・コマンド・テーマ・hook（fallow gate。`fallow`本体は`mise use -g npm:fallow`で別途導入）
-- ompの設定（piの設定は移行確認まで保持）
+- ompの設定、team-review Skill・観点別エージェント、PR作成前hook（piの設定は移行確認まで保持）
 - Herdrの設定とSkill
 - Zsh
 - Ghostty
@@ -54,3 +54,11 @@ omp / Piでは`/skill:herdr`、Claude Codeでは`/herdr`で利用できます。
 `omp/agent/APPEND_SYSTEM.md`はClaude Codeのoutput style「Readable」（`~/.claude/output-styles/readable.md`）と同じ文体指示です。ompはoutput styleを読まないため、既定のシステムプロンプトを残したまま末尾に追記する`APPEND_SYSTEM.md`へ置いています。
 
 `mise bootstrap`後、`omp`の`/login`でAnthropicとOpenAI Codexに認証し、`omp config get modelRoles`と`/agents`で確認してください。ompの`/model`・`/settings`で設定を保存するとsymlinkが通常ファイルに置き換わることがあるため、その場合は差分をこのファイルへ戻して`mise bootstrap`し直してください。piの認証情報・セッションは移行しません。
+
+## ompのPR作成前レビュー
+
+`omp/agent/skills/team-review/SKILL.md`を`~/.omp/agent/skills/team-review/`へ、6つの観点別エージェントを`~/.omp/agent/agents/`へリンクします。Standards・Spec・簡潔さは`@slow`、定義順・命名・記述の役割分担は`@task`で、どちらもClaude Opus 5.5です。セキュリティは組み込みの`security-reviewer`（`@slow`）が、security-auditをPR差分に限定したguidance modeで参照します。Claude・Codexの既存の`team-review`は残り、ompではネイティブSkillが優先されます。
+
+`omp/agent/hooks/pre/pr-gate.ts`は`~/.omp/agent/hooks/pre/`へリンクします。ユーザー全体のhookなので、dotfilesを含む**このリポジトリ以外でも**`gh pr create`またはompの`github`ツールによるPR作成を止めます。HEADごとの`git rev-parse --git-path omp-review`以下に`verdict: pass`のレビュー記録が必要です。lockfile・`drizzle/meta/**`を除く差分が300行を超えた場合は、作成を止めずに分割を促す警告を返します。commit-msg hookやteam-reviewを迂回する環境変数は設けません。
+
+security-auditはdotfilesではなくグローバルの`~/.agents/skills/security-audit/`に導入し、`~/.claude/skills/security-audit`からも同じ実体を参照します。取り込んだCloudflareのコミットは`c1c8a8c1471069fb0e188eeaff69b8e8db6564a8`（2026-09-14T19:28:54Z、導入時点で公開から3日以上経過）。再導入時はその時点のコミット日時が3日以上前か確認します。
