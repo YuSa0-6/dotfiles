@@ -5,7 +5,7 @@ show_agent_labels_on_pane_borders = true
 
 status_indicators = "symbols"
 [ui.toast]
-delivery = "herdr"
+delivery = "terminal"
 
 [ui.sound]
 enabled = true
