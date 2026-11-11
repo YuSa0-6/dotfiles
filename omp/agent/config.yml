@@ -14,6 +14,7 @@ disabledProviders:
   - openrouter
   - amazon-bedrock
   - bedrock-mantle
+  - agent-plugins
 advisor:
   enabled: true
 task:
