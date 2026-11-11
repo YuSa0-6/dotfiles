@@ -1,17 +1,19 @@
 modelRoles:
-  default: anthropic/claude-opus-5-5
-  plan: anthropic/claude-opus-5-5
-  designer: anthropic/claude-opus-5-5
-  advisor: anthropic/claude-fable-5-1
-  slow: openai-codex/gpt-6-astra:high
-  task: openai-codex/gpt-6-sol:high
-  smol: openai-codex/gpt-6-luna:medium
-  vision: openai-codex/gpt-6-sol
-  commit: openai-codex/gpt-6-luna
-  tiny: openai-codex/gpt-6-luna
-defaultThinkingLevel: low
+  default: anthropic/claude-fable-5-2:high
+  plan: anthropic/claude-fable-5-2:high
+  task: anthropic/claude-opus-5-5:high
+  slow: anthropic/claude-opus-5-5:high
+  advisor: openai-codex/gpt-6-astra:medium
+  vision: openai-codex/gpt-6.1-terra:auto
+  smol: anthropic/claude-haiku-5-5
+  commit: anthropic/claude-haiku-5-5
+  tiny: anthropic/claude-haiku-5-5
+  memory: anthropic/claude-haiku-5-5
+defaultThinkingLevel: high
 disabledProviders:
   - openrouter
+  - amazon-bedrock
+  - bedrock-mantle
 advisor:
   enabled: true
 task:
@@ -19,36 +21,48 @@ task:
     enabled: true
   agentModelOverrides:
     task: "@task"
+    poteto-agent: "@task"
     reviewer: "@slow"
     security-reviewer: "@slow"
-    librarian: "@task"
+    thermo-nuclear-review-subagent: "@slow"
+    thermo-nuclear-code-quality-review-subagent: "@slow"
+    comment-sicko: "@slow"
     scout: "@smol"
     sonic: "@smol"
-    designer: "@designer"
   showResolvedModelBadge: true
   agentAdvisor:
-    task: "on"
+    task: openai-codex/gpt-6.1-sol:medium
 retry:
   fallbackChains:
     default:
-      - anthropic/claude-opus-5
-      - openai-codex/gpt-6-astra
-    slow:
-      - openai-codex/gpt-5.6-sol
+      - openai-codex/gpt-6.1-sol
     task:
-      - openai-codex/gpt-5.6-sol
+      - openai-codex/gpt-6.1-sol
+    slow:
+      - openai-codex/gpt-6-astra:medium
+    vision:
+      - anthropic/claude-opus-5-5:high
     smol:
-      - openai-codex/gpt-5.6-luna
+      - openai-codex/gpt-6-luna:medium
 symbolPreset: nerd
 composer:
   shape: claude
   tokenRate: true
 theme:
   dark: titanium
-  light: titanium
-setupVersion: 2
+  light: light-zenith
+setupVersion: 3
 colorBlindMode: true
 images:
   blockImages: true
 tui:
   imeSafeCursor: true
+dev:
+  autoqaConsent: granted
+browser:
+  headless: true
+codexResets:
+  autoRedeem5h: "yes"
+  autoRedeemWeekly: "yes"
+update:
+  auto: true
