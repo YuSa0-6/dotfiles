@@ -4,6 +4,9 @@
 "~/.zshenv" = { source = "zsh/.zshenv", mode = "symlink" }
 "~/Library/Application Support/com.mitchellh.ghostty/config" = { source = "ghostty/config", mode = "symlink" }
 "~/.config/rex/init.lua" = { source = "rex/init.lua", mode = "symlink" }
+"~/.config/zed/settings.json" = { source = "zed/settings.json", mode = "symlink" }
+"~/.config/zed/keymap.json" = { source = "zed/keymap.json", mode = "symlink" }
+"~/.config/zed/AGENTS.md" = { source = "zed/AGENTS.md", mode = "symlink" }
 "~/.config/nvim" = { source = "nvim", mode = "symlink" }
 "~/.pi/agent/settings.json" = { source = "pi/agent/settings.json", mode = "symlink" }
 "~/.config/herdr/config.toml" = { source = "herdr/config.toml", mode = "symlink" }
