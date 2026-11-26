@@ -3,6 +3,7 @@
 "~/.zprofile" = { source = "zsh/.zprofile", mode = "symlink" }
 "~/.zshenv" = { source = "zsh/.zshenv", mode = "symlink" }
 "~/Library/Application Support/com.mitchellh.ghostty/config" = { source = "ghostty/config", mode = "symlink" }
+"~/.config/rex/init.lua" = { source = "rex/init.lua", mode = "symlink" }
 "~/.config/nvim" = { source = "nvim", mode = "symlink" }
 "~/.config/druk/config.json" = { source = "druk/config.json", mode = "symlink" }
 "~/.pi/agent/settings.json" = { source = "pi/agent/settings.json", mode = "symlink" }

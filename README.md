@@ -7,6 +7,7 @@
 - Claude Codeの設定・コマンド・テーマ
 - ompの設定（piの設定は移行確認まで保持）
 - Herdrの設定とSkill
+- Rex（`init.lua`）
 - Zsh
 - Ghostty
 - Neovim
@@ -44,6 +45,10 @@ mise bootstrap status
 - Claude Code：`~/.claude/skills/herdr/SKILL.md`
 
 omp / Piでは`/skill:herdr`、Claude Codeでは`/herdr`で利用できます。Herdrを操作するには、Herdr内で実行している必要があります（`HERDR_ENV=1`）。この設定で導入するのはSkillのみで、Herdr本体やagent-state hookは含みません。
+
+## Rex
+
+`rex/init.lua`を`~/.config/rex/init.lua`へ配置します。キーバインド・キーモード・カスタムアクションのみを管理し、フォント・テーマなどの見た目はRexのSettings画面で設定します。`rex config check`で読み込みを確認できます。
 
 ## ompへの移行
 

@@ -1,0 +1,11 @@
+-- Rex configuration
+-- docs: https://www.superlogical.com/rex/docs/customize/config
+-- check: rex config check
+--
+-- フォント・テーマ・パディングなどの見た目はRexのSettings画面で設定する。
+-- ここではキーバインド・キーモード・カスタムアクションのみ管理する。
+-- デフォルトのショートカットはGhostty系のため、必要になったものだけ追加する。
+--
+-- 例:
+-- rex.bind("cmd+e", "pane.zoom")
+-- rex.bind("shift+cmd+d", "pane.split", { direction = "down" })
