@@ -16,6 +16,15 @@
             "command": "\"/Users/yusa/.claude/hooks/context-mode-cache-heal.mjs\""
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/sh -c 'rex __internal session-start --agent claude 2>/dev/null || true'",
+            "timeout": 5
+          }
+        ]
       }
     ]
   },
@@ -47,6 +56,9 @@
     }
   },
   "language": "日本語",
+  "sandbox": {
+    "enabled": true
+  },
   "effortLevel": "xhigh",
   "modelSettings": {
     "claude-fable-5-1": {
@@ -62,5 +74,7 @@
   "theme": "custom:catppuccin-latte",
   "verbose": true,
   "skipAutoPermissionPrompt": true,
-  "voiceEnabled": true
+  "voiceEnabled": true,
+  "agentPushNotifEnabled": true,
+  "inputNeededNotifEnabled": true
 }

@@ -130,3 +130,9 @@ bindkey '^G' ghq-fzf
 
 # Added by the Hunk installer (https://hunk.dev)
 export PATH="$HOME/.hunk/bin:$PATH"
+
+# >>> grok installer >>>
+export PATH="$HOME/.grok/bin:$PATH"
+fpath=(~/.grok/completions/zsh $fpath)
+autoload -Uz compinit && compinit -C
+# <<< grok installer <<<
