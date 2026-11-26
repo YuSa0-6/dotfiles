@@ -6,4 +6,3 @@ node_modules/
 nvim/.pi/
 nvim/Untitled
 claude/settings.local.json
-omp/agent/*.lock
