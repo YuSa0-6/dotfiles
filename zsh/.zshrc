@@ -114,7 +114,6 @@ export VOLTA_HOME="$HOME/.volta"
 export PATH="$VOLTA_HOME/bin:$PATH"
 
 [[ "$TERM_PROGRAM" == "kiro" ]] && . "$(kiro --locate-shell-integration-path zsh)"
-eval "$($HOME/.local/bin/mise activate zsh)"
 
 # fzf
 source <(fzf --zsh)
@@ -136,3 +135,10 @@ export PATH="$HOME/.grok/bin:$PATH"
 fpath=(~/.grok/completions/zsh $fpath)
 autoload -Uz compinit && compinit -C
 # <<< grok installer <<<
+
+
+# Added by Antigravity CLI installer
+export PATH="/Users/yusa/.local/bin:$PATH"
+
+# mise: keep last so its tool paths come first in PATH
+eval "$($HOME/.local/bin/mise activate zsh)"
