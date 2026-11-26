@@ -1,13 +1,26 @@
 {
-  "lastChangelogVersion": "0.86.1",
+  "lastChangelogVersion": "1.6.1",
   "theme": "light/dark",
-  "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-6-astra",
+  "defaultProvider": "opencode-go",
+  "defaultModel": "gemini-4-argon",
   "defaultThinkingLevel": "low",
   "packages": [
     "npm:context-mode"
   ],
-  "showCacheMissNotices": true,
   "collapseChangelog": true,
-  "tuiMode": "regular"
+  "tuiMode": "regular",
+  "notices": {
+    "cacheMisses": true,
+    "cacheWarming": true,
+    "compactionCosts": true,
+    "reasoningDrops": true
+  },
+  "enabledModels": [
+    "opencode-go/gemini-4-argon",
+    "opencode-go/deepseek-*",
+    "opencode-go/glm-*"
+  ],
+  "extensions": [
+    "/Users/yusa/.local/share/opencode-console/cli/pi-extension.js"
+  ]
 }
