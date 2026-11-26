@@ -11,7 +11,6 @@
 - Zsh
 - Ghostty
 - Neovim
-- druk（`config.json`のみ。拡張・セッションは除外）
 
 ## miseでセットアップ
 

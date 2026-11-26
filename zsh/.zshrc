@@ -130,6 +130,3 @@ bindkey '^G' ghq-fzf
 
 # Added by the Hunk installer (https://hunk.dev)
 export PATH="$HOME/.hunk/bin:$PATH"
-
-# druk
-export PATH="$HOME/.druk/bin:$PATH"
