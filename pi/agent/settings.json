@@ -5,11 +5,7 @@
   "defaultModel": "gpt-6-astra",
   "defaultThinkingLevel": "low",
   "packages": [
-    "npm:pi-dynamic-workflows",
-    "npm:context-mode",
-    "npm:pi-lens@4.1.6",
-    "git:github.com/DietrichGebert/ponytail",
-    "npm:pi-mcp-adapter"
+    "npm:context-mode"
   ],
   "showCacheMissNotices": true,
   "collapseChangelog": true,
