@@ -5,7 +5,7 @@
 管理対象：
 
 - Claude Codeの設定・テーマ
-- piの設定
+- piの設定（pi-lensの設定を含む）
 - Herdrの設定
 - Rex（`init.lua`）
 - Zed（`settings.json`・`keymap.json`・`AGENTS.md`。会話履歴・埋め込み・プロンプトは除外）

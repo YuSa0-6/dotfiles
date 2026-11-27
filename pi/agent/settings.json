@@ -6,7 +6,8 @@
   "defaultThinkingLevel": "low",
   "packages": [
     "npm:context-mode",
-    "../../workspace/pi-dotfiles"
+    "../../workspace/pi-dotfiles",
+    "npm:pi-lens"
   ],
   "collapseChangelog": true,
   "tuiMode": "regular",
