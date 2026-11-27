@@ -1,6 +1,5 @@
 [tools]
 bun = "0.7"
-colima = "latest"
 node = "26"
 pnpm = "latest"
 ruby = "3.4"
