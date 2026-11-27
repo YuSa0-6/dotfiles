@@ -1,0 +1,11 @@
+[tools]
+bun = "0.7"
+colima = "latest"
+node = "26"
+pnpm = "latest"
+ruby = "3.4"
+uv = "latest"
+
+[settings]
+# read .ruby-version in projects
+idiomatic_version_file_enable_tools = ["ruby"]
