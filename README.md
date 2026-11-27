@@ -9,6 +9,7 @@
 - Herdrの設定
 - Rex（`init.lua`）
 - Zed（`settings.json`・`keymap.json`・`AGENTS.md`。会話履歴・埋め込み・プロンプトは除外）
+- Antigravity CLI（agyの`settings.json`。会話履歴・プラグインの状態は除外）
 - Zsh
 - Neovim
 - mise（グローバルのツール設定）

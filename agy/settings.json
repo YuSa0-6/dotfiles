@@ -1,0 +1,27 @@
+{
+  "agentMode": "",
+  "allowNonWorkspaceAccess": true,
+  "altScreenMode": "always",
+  "artifactReviewPolicy": "agent-decides",
+  "enableTerminalSandbox": true,
+  "model": "Gemini 4 Neon (Medium)",
+  "notifications": true,
+  "permissions": {
+    "allow": [
+      "command(/Users/yusa/.gemini/config/plugins/gcalendar/skills/gcalendar/scripts/gcalendar --version)",
+      "mcp(notion_notion/notion-calendar-list-events)",
+      "mcp(notion_notion/notion-search)",
+      "mcp(notion_notion/notion-list-recent-pages)",
+      "command(curl -sSL https://conference.findy-code.io/embeds/session-table/architecture-con-2026 -o /tmp/embed_test.html)",
+      "command(rex)",
+      "mcp(notion_notion/notion-fetch)",
+      "mcp(notion_notion/notion-create-pages)",
+      "mcp(notion_notion/notion-query-data-sources)",
+      "mcp(notion_notion/notion-update-page)"
+    ]
+  },
+  "toolPermission": "always-proceed",
+  "trustedWorkspaces": [
+    "/Users/yusa"
+  ]
+}
