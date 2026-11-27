@@ -5,7 +5,8 @@
   "defaultModel": "gemini-4-argon",
   "defaultThinkingLevel": "low",
   "packages": [
-    "npm:context-mode"
+    "npm:context-mode",
+    "../../workspace/pi-dotfiles"
   ],
   "collapseChangelog": true,
   "tuiMode": "regular",
