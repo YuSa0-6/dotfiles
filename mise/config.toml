@@ -2,8 +2,9 @@
 bun = "1.4"
 node = "26"
 pnpm = "latest"
-ruby = "3.4"
+ruby = "4.0"
 uv = "latest"
+vp = "latest"
 
 [settings]
 # read .ruby-version in projects
