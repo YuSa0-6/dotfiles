@@ -47,3 +47,7 @@ mise bootstrap status
 `rex/init.lua`を`~/.config/rex/init.lua`へ配置します。キーバインド・キーモード・カスタムアクションのみを管理し、フォント・テーマなどの見た目はRexのSettings画面で設定します。`rex config check`で読み込みを確認できます。
 
 新しいマシンでは`rex terminfo setup`を一度実行し、`xterm-rex`のterminfoとssh guardを入れます（ssh guardは`~/.ssh/config`に`Include`を追記します）。
+
+## Antigravity CLI
+
+agyは保存時に`settings.json`を置き換えるため、symlinkではなくcopyで配置します。agy側で設定を変えたら`mise dotfiles add --changed`でリポジトリに取り込みます。差分は`mise dotfiles status`で確認できます。

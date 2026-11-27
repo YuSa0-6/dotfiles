@@ -22,6 +22,7 @@
   },
   "toolPermission": "always-proceed",
   "trustedWorkspaces": [
-    "/Users/yusa"
+    "/Users/yusa",
+    "/Users/yusa/workspace/dotfiles"
   ]
 }
