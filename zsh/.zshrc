@@ -12,9 +12,6 @@ command -v rex >/dev/null && source <(rex completion zsh)
 
 [[ "$TERM_PROGRAM" == "kiro" ]] && . "$(kiro --locate-shell-integration-path zsh)"
 
-# fzf
-source <(fzf --zsh)
-
 # ghq + fzf: Ctrl-G to jump to a ghq-managed repo
 function ghq-fzf() {
   local dir
@@ -34,5 +31,8 @@ export PATH="$HOME/.grok/bin:$PATH"
 # Antigravity CLI and mise live here
 export PATH="$HOME/.local/bin:$PATH"
 
-# mise: keep last so its tool paths come first in PATH
+# mise: keep after other PATH edits so its tool paths come first
 eval "$($HOME/.local/bin/mise activate zsh)"
+
+# fzf comes from mise, so load it after mise is active
+source <(fzf --zsh)

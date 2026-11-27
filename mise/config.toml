@@ -1,10 +1,25 @@
 [tools]
+# runtimes
 bun = "1.4"
 node = "26"
 pnpm = "latest"
 ruby = "4.0"
 uv = "latest"
 vp = "latest"
+
+# CLI tools (moved from Homebrew)
+"aqua:anthropics/claude-code" = "latest"
+"aqua:earendil-works/pi" = "latest"
+delta = "latest"
+fd = "latest"
+fzf = "latest"
+gh = "latest"
+ghq = "latest"
+jq = "latest"
+lazygit = "latest"
+"aqua:neovim/neovim" = "latest"
+ripgrep = "latest"
+tree-sitter = "latest"
 
 [settings]
 # read .ruby-version in projects
