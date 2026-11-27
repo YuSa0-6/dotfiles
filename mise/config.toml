@@ -1,5 +1,5 @@
 [tools]
-bun = "0.7"
+bun = "1.4"
 node = "26"
 pnpm = "latest"
 ruby = "3.4"
