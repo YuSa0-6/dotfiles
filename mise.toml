@@ -2,7 +2,6 @@
 "~/.zshrc" = { source = "zsh/.zshrc", mode = "symlink" }
 "~/.zprofile" = { source = "zsh/.zprofile", mode = "symlink" }
 "~/.zshenv" = { source = "zsh/.zshenv", mode = "symlink" }
-"~/Library/Application Support/com.mitchellh.ghostty/config" = { source = "ghostty/config", mode = "symlink" }
 "~/.config/rex/init.lua" = { source = "rex/init.lua", mode = "symlink" }
 "~/.config/zed/settings.json" = { source = "zed/settings.json", mode = "symlink" }
 "~/.config/zed/keymap.json" = { source = "zed/keymap.json", mode = "symlink" }

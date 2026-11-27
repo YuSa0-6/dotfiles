@@ -10,7 +10,6 @@
 - Rex（`init.lua`）
 - Zed（`settings.json`・`keymap.json`・`AGENTS.md`。会話履歴・埋め込み・プロンプトは除外）
 - Zsh
-- Ghostty
 - Neovim
 - mise（グローバルのツール設定）
 - Git（`config`・`ignore`）
