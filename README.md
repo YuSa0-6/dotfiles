@@ -12,6 +12,9 @@
 - Zsh
 - Ghostty
 - Neovim
+- mise（グローバルのツール設定）
+- Git（`config`・`ignore`）
+- Homebrew（`Brewfile`）
 
 ## miseでセットアップ
 
@@ -27,6 +30,8 @@ mise bootstrap --from https://github.com/YuSa0-6/dotfiles.git --dry-run
 mise bootstrap --from https://github.com/YuSa0-6/dotfiles.git
 ```
 
+Homebrewのパッケージは`brew bundle --file=Brewfile`で入れます。
+
 取得済みのリポジトリでは、次のコマンドで確認・適用できます。
 
 ```sh
@@ -40,3 +45,5 @@ mise bootstrap status
 ## Rex
 
 `rex/init.lua`を`~/.config/rex/init.lua`へ配置します。キーバインド・キーモード・カスタムアクションのみを管理し、フォント・テーマなどの見た目はRexのSettings画面で設定します。`rex config check`で読み込みを確認できます。
+
+新しいマシンでは`rex terminfo setup`を一度実行し、`xterm-rex`のterminfoとssh guardを入れます（ssh guardは`~/.ssh/config`に`Include`を追記します）。
