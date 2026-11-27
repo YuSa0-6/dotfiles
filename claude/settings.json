@@ -73,8 +73,9 @@
   "skipWorkflowUsageWarning": true,
   "theme": "custom:catppuccin-latte",
   "verbose": true,
+  "inputNeededNotifEnabled": true,
+  "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
   "voiceEnabled": true,
-  "agentPushNotifEnabled": true,
-  "inputNeededNotifEnabled": true
+  "autoCompactWindow": 400000
 }
